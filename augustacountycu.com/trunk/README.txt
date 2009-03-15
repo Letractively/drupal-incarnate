@@ -14,10 +14,15 @@ Primary Requirements:
 		annual financial reports
 		
 	- 	must be able to manage frequently changing information 
-		without the need of a programmer or consultant 
+		without the need of a programmer or consultant
+		
+	- 	keep costs down for server management
 	
 Secondary Requirements:
 
 	- 	some branding to relfect the identity of the organization
+	
+	- 	if mistakes are made on web, easily revert to previous 
+		days content
 
 		 
