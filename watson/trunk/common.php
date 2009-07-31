@@ -2813,7 +2813,11 @@ function templatereplace($line)
 	if (strpos($line, "{EXPIRY}") !== false) $line=str_replace("{EXPIRY}", $thissurvey['expiry'], $line);
 	if (strpos($line, "{EXPIRY-DMY}") !== false) $line=str_replace("{EXPIRY-DMY}", date("d-m-Y",strtotime($thissurvey["expiry"])), $line);
 	if (strpos($line, "{EXPIRY-MDY}") !== false) $line=str_replace("{EXPIRY-MDY}", date("m-d-Y",strtotime($thissurvey["expiry"])), $line);
-	if (strpos($line, "{NAVIGATOR}") !== false) $line=str_replace("{NAVIGATOR}", $navigator, $line);
+	echo "<code>".htmlentities($navigator)."</code>";
+	if (strpos($line, "{NAVIGATOR}") !== false) {
+		$line=str_replace("{NAVIGATOR}", str_replace("/>".chr(10)."<", "/>Stuff<", $navigator), $line);
+	}
+	
 	if (strpos($line, "{SUBMITBUTTON}") !== false) {
 		$submitbutton="<input class='submit' type='submit' value=' ".$clang->gT("Submit")." ' name='move2' onclick=\"javascript:document.limesurvey.move.value = 'movesubmit';\" />";
 		$line=str_replace("{SUBMITBUTTON}", $submitbutton, $line);
