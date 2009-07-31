@@ -2,10 +2,12 @@
 <div id="container" class="box">
       
         <div id="obsah" class="content box">
+          <span style='font-size: 12px; font-weight: bold;'>Introduction for Researcher</span>
+          <hr>
           <div class="in">
-                        <h2>{SURVEYNAME}</h2>
-			<p>{SURVEYDESCRIPTION}</P>
+                        <!--<h2>{SURVEYNAME}</h2>-->
+			<!--<p>{SURVEYDESCRIPTION}</P>-->
 
-			<p>{WELCOME}</p><p>&nbsp;</p>
-			<h3>{THEREAREXQUESTIONS}</h3>
+			<p>{WELCOME}</p><p> </p>
+			<!--<h3>{THEREAREXQUESTIONS}</h3>-->
 

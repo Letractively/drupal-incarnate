@@ -2,11 +2,11 @@
 body, div, span, p, a, img, ul, ol, li, table, th, tr, td, form, fieldset, legend, dl, dt, dd, blockquote, applet, object { border:0;border-style:none; }
 body { 
   padding: 0 0; 
-  background: #192d40 url('bg.jpg') repeat-x; 
-  font-family: "arial",sans-serif; 
-  font-size: 13px;
+ /* background: #192d40 url('bg.jpg') repeat-x; */
+  font-family: "Times New Roman",serif; 
+  font-size: 18px;
   line-height:24px;
-  color: #e8eaeb; 
+  color: black; 
   text-align: center; 
 }
 
@@ -20,16 +20,16 @@ a:hover {color:#fff; text-decoration: none;}
 /* headings --------------------------------------------------------------------- */
 h1, h2, h3, h4, h5, h6 { margin:15px 0 10px 0; }
 h1 { font-size:200%; }
-h2 { font-size:160%; font-family: 'Trebuchet MS', 'Geneva CE', lucida, sans-serif; font-weight: normal; }
-h3 { font-size:120%; margin-top: 25px; font-family: 'Trebuchet MS', 'Geneva CE', lucida, sans-serif;}
-h4 { font-size:120%; }
+h2 { font-size:120%; font-family: 'Times New Roman', serif; font-weight: bold; }
+h3 { font-size:100%; margin-top: 25px;} 
+h4 { font-size:100%; }
 h5 { font-size:100%; }
 
 
 
 /* layout ---------------------------------------------------------------------- */
 #layout { 
-  width:790px; 
+  width:600px; 
   margin:0 auto; 
   text-align:left; 
 }
@@ -38,7 +38,11 @@ padding-top: 12px;
 }
 .survey-survey-percent
 {
-	padding: 0.2em 0%;
+	/* padding: 0.2em 0%; */
+        /* text-align: right; */
+        font-size; 10px;
+        font-weight: bold;
+        width: 600px;
 }
 #progress-graph
 {
@@ -52,7 +56,7 @@ padding-top: 12px;
 	padding: 0.5em 0.5em 0.4em 1em;
 	border-top: 0.1em solid rgb(50, 68, 85);
 	border-bottom: 0.1em solid rgb(50, 68, 85);
-	text-align: left;
+	text-align: right;
 }
 .hide
 {
@@ -89,16 +93,15 @@ padding-top: 12px;
 #logo {
 font-family: Impact, 'Techno CE', sans-serif;
 font-weight: normal;
-color: #fff;
+color: white;
 position: relative; 
 overflow: hidden; 
-height: 110px;
-font-size:260%;
+height: 20px;
 margin: 0;
 line-height: 130px;
 }
 #logo a{
-color: #fff;
+color: white;
 text-decoration: none;
 }
 
@@ -107,7 +110,7 @@ position: absolute;
 left: 0; top: 20px; 
 z-index: 1; 
 width: 120px; height: 80px;
-background: url('Logo_LimeSurvey_transparent_25x25.png') 60px 5px no-repeat; 
+/*background: url('Logo_LimeSurvey_transparent_25x25.png') 60px 5px no-repeat; */
 cursor: pointer;
 }
 
@@ -139,7 +142,7 @@ color: #3f576e;
   clear:both;
   height: 30px;
   margin-top: 20px;
-  border-top: 1px solid #324455;
+  /* border-top: 1px solid #324455; */
   padding:10px 3px;
   color: #a0a9b0;
   font-size: 90%;
@@ -203,8 +206,8 @@ hr { display:block; height:1px; margin:10px 0; padding:0; border:0 solid #CCC; b
 {margin-top:30px;}
 
 .survey-survey-percent {
-width:160px;
-text-align:center;
+width:500px;
+text-align:right;
 margin:0 auto;
 }
 
@@ -244,24 +247,32 @@ line-height:5px;
 
 .survey-groupdescription {
 font-weight:400;
-border-bottom:1px solid #ddd;
-margin:0 0 30px;
-padding:0 0 2px 3px;
+border-bottom:1px solid black;
+margin:0 0 0px;
+padding:0 0 25px 3px;
 }
 
 .survey-groupname {
 font-weight:700;
+display:none;
 font-size:16px;
-border-top:1px solid #ddd;
+/*border-top:1px solid #ddd;*/
 margin:10px 0 0;
 padding:2px 0 0 3px;
 }
 
 .survey-question {
 
-border-top:1px solid #a0a9b0;
+/* border-top:1px solid #a0a9b0; */
 margin:5px 0 20px 0%;
 
+}
+
+.asterisk {
+color:red;
+font-size:9pt;
+font-family:verdana;
+display: none;
 }
 
 .survey-question-answer {
@@ -316,13 +327,19 @@ width:auto;
 }
 
 .array1 {
-background-color:#192D40;
+background-color:#FFFFFF;
 text-align:center;
 }
 
 .array2 {
-background-color:#0C1C2B;
+background-color:#FFFFCC;
 text-align:center;
+}
+
+th.answertext {
+ /*color: green;*/
+ padding-left: 10px;
+ padding-top:2px;
 }
 
 select
@@ -429,6 +446,48 @@ select
 /* STYLES NOT YET DEFINED - - - - -
 .boilerplate {}
 */
+ul.X-large li {
+ 	 /* border: 1px solid red; */
+ 	 /* width: 600px; */
+ 	 display: block;
+}
+ul.X-large li:hover {
+ 	 /* border: 1px solid red; */
+ 	 /* width: 600px; */
+ 	 display: block;
+ 	 background: red;
+}
+.
+ul.X-large li label {
+	 border: 1px solid green; 
+ 	 width: 100px;
+ 	 overflow: hidden;
+ 	 float: left;
+}
+
+ul.X-large li span {
+	 /* border: 2px solid blue; */
+ 	 float: right;
+ 	 display: inline;
+ 	 width: 160px;
+}
+/*
+.multiple-short-txt ul .X-large li {
+
+}
+.multiple-short-txt ul .X-large li label {
+ 	 border: 1px solid green; 
+ 	 width: 400px;
+ 	 float: left;
+}
+.multiple-short-txt ul .X-large li span {
+ 	 border: 2px solid blue; 
+ 	 float: right;
+ 	 display: inline;
+ 	 width: 160px;
+ 	 
+ 	*/ 
+ 	 
 /*
  .choice-5-pt-radio ul
 ,.yes-no ul
@@ -602,11 +661,6 @@ ul.cols-8 li , ul.cols-8-ul , table.cols-8 td { width: 11.5%; }
 */
 
 
-.multiple-short-txt li span
-{
-	margin-left: 0.5em;
-	width: 20em;
-}
 .multiple-short-txt ul.numbers-only li span
 {
 	width: 10em;
@@ -818,6 +872,10 @@ ul.cols-8 li , ul.cols-8-ul , table.cols-8 td { width: 11.5%; }
 	float: left;
 	width: 98.5%;
 	margin-bottom: 1em;
+}
+
+.survey-question-help {
+	display: none;	
 }
 
 /* Jquery CSS
