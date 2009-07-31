@@ -799,7 +799,10 @@ function getTokenData($surveyid, $token)
 	} // while
 	return $thistoken;
 }
-
+/**
+ * This is the makegraph that comes with LimeSurvey
+ */
+ /*
 function makegraph($currentstep, $total)
 {
 	global $thissurvey;
@@ -822,7 +825,7 @@ function makegraph($currentstep, $total)
 	. "</table>\n"
 	. "</td></tr>\n</table>\n";
 	
-*/	$graph = '<div id="progress-graph">
+	$graph = '<div id="progress-graph">
 	<span class="hide">You have completed '.$size.'% of this survey</span>
 
 			<div class="zero">0%</div>
@@ -830,6 +833,26 @@ function makegraph($currentstep, $total)
 			<div class="cent">100%</div>
 		</div>';
 	return $graph;
+}
+*/
+/**
+ * This is makegraph replaced with the help of workaround documented here:
+ * http://bugs.limesurvey.org/view.php?id=1893
+ */
+function makegraph($thisstep, $total)
+{
+    global $thissurvey;
+    global $thistpl, $publicurl, $clang;
+    $chart=$thistpl."/chart.jpg";
+    if (!is_file($chart)) {$shchart="chart.jpg";}
+    else {$shchart = "$publicurl/templates/{$thissurvey['templatedir']}/chart.jpg";}
+    // $graph = "<table class='graph' width='100' align='center' cellpadding='2'><tr><td>\n"
+    $graph = "";
+    if ($thisstep > 1) {
+    	 $graph = "Page ".($thisstep-1)." of ".($total-1).".";
+    }
+   
+    return $graph;
 }
 
 
@@ -2265,23 +2288,23 @@ function surveymover()
 	if (isset($_SESSION['step']) && $_SESSION['step'] && (!$_SESSION['totalsteps'] || ($_SESSION['step'] < $_SESSION['totalsteps'])))
 	{
 		$surveymover .=  "\t\t\t\t\t<input class='submit' type='submit' accesskey='n' onclick=\"javascript:document.limesurvey.move.value = 'movenext';\" value=' "
-		. $clang->gT("Next")." &gt;&gt; ' name='move2' />\n";
+		. $clang->gT("  Continue  ")." ' name='move2' />\n";
 	}
     // here, in some lace, is where I must modify to turn the next button conditionable
 	if (!isset($_SESSION['step']) || !$_SESSION['step'])
 	{
 		$surveymover .=  "\t\t\t\t\t<input class='submit' type='submit' accesskey='n' onclick=\"javascript:document.limesurvey.move.value = 'movenext';\" value=' "
-		. $clang->gT("Next")." &gt;&gt; ' name='move2' />\n";
+		. $clang->gT("  Continue  ")." ' name='move2' />\n";
 	}
 	if (isset($_SESSION['step']) && $_SESSION['step'] && ($_SESSION['step'] == $_SESSION['totalsteps']) && $presentinggroupdescription == "yes")
 	{
 		$surveymover .=  "\t\t\t\t\t<input class='submit' type='submit' onclick=\"javascript:document.limesurvey.move.value = 'movenext';\" value=' "
-		. $clang->gT("Next")." &gt;&gt; ' name='move2' />\n";
+		. $clang->gT("  Continue  ")." ' name='move2' />\n";
 	}
 	if ($_SESSION['step'] && ($_SESSION['step'] == $_SESSION['totalsteps']) && !$presentinggroupdescription)
 	{
 		$surveymover .= "\t\t\t\t\t<input class='submit' type='submit' accesskey='l' onclick=\"javascript:document.limesurvey.move.value = 'movesubmit';\" value=' "
-		. $clang->gT("Submit")." ' name='move2' />\n";
+		. $clang->gT("Submit")." ' name='move2' id='move2'/>\n";
 	}
 
 //	$surveymover .= "<input type='hidden' name='PHPSESSID' value='".session_id()."' id='PHPSESSID' />\n";
