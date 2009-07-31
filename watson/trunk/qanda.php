@@ -4656,7 +4656,7 @@ function do_array_flexible($ia)
 			$answer_head .= "\t\t\t<td align='right' colspan='8'><img src='upload/labels/7/trues.png'></td>\n";
 		}
 		else if ($lid == 8) {
-			$answer_head .= "\t\t\t<td align='right' colspan='8'><img src='upload/labels/7/trues.png'></td>\n";
+			$answer_head .= "";
 		}
 		else if ($lid == 3) {
 			$answer_head .= "\t\t\t<td align='right' colspan='9'><img src='upload/labels/3/true_scale.png'></td>\n";
