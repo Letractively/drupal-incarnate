@@ -2813,9 +2813,9 @@ function templatereplace($line)
 	if (strpos($line, "{EXPIRY}") !== false) $line=str_replace("{EXPIRY}", $thissurvey['expiry'], $line);
 	if (strpos($line, "{EXPIRY-DMY}") !== false) $line=str_replace("{EXPIRY-DMY}", date("d-m-Y",strtotime($thissurvey["expiry"])), $line);
 	if (strpos($line, "{EXPIRY-MDY}") !== false) $line=str_replace("{EXPIRY-MDY}", date("m-d-Y",strtotime($thissurvey["expiry"])), $line);
-	echo "<code>".htmlentities($navigator)."</code>";
+	//echo "<code>".htmlentities($navigator)."</code>";
 	if (strpos($line, "{NAVIGATOR}") !== false) {
-		$line=str_replace("{NAVIGATOR}", str_replace("/>".chr(10)."<", "/>Stuff<", $navigator), $line);
+		$line=str_replace("{NAVIGATOR}", str_replace("/>".chr(10)."<", "/><", $navigator), $line);
 	}
 	
 	if (strpos($line, "{SUBMITBUTTON}") !== false) {

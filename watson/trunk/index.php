@@ -2269,7 +2269,7 @@ function surveymover()
 	//Attribute accesskey added for keyboard navigation.
 	global $thissurvey, $clang;
 	global $surveyid, $presentinggroupdescription;
-	$surveymover = "";
+	$surveymover .= "<span class='f-left' style='margin-top: -15px'>";
 	if (isset($_SESSION['step']) && $_SESSION['step'] && ($_SESSION['step'] == $_SESSION['totalsteps']) && !$presentinggroupdescription && $thissurvey['format'] != "A")
 	{
 		$surveymover = "<input type=\"hidden\" name=\"move\" value=\"movesubmit\" id=\"movesubmit\" />";
@@ -2279,12 +2279,13 @@ function surveymover()
 		$surveymover = "<input type=\"hidden\" name=\"move\" value=\"movenext\" id=\"movenext\" />";
 	}
 
-
+	
 	if (isset($_SESSION['step']) && $_SESSION['step'] > 0 && $thissurvey['format'] != "A" && !$presentinggroupdescription && $thissurvey['allowprev'] != "N")
 	{
 		$surveymover .= "<input class='submit' accesskey='p' type='button' onclick=\"javascript:document.limesurvey.move.value = 'moveprev'; document.limesurvey.submit();\" value=' &lt;&lt; "
 		. $clang->gT("Previous")." ' name='move2' />\n";
 	}
+	$surveymover .= "</span><span class='f-right'>";
 	if (isset($_SESSION['step']) && $_SESSION['step'] && (!$_SESSION['totalsteps'] || ($_SESSION['step'] < $_SESSION['totalsteps'])))
 	{
 		$surveymover .=  "\t\t\t\t\t<input class='submit' type='submit' accesskey='n' onclick=\"javascript:document.limesurvey.move.value = 'movenext';\" value=' "
@@ -2306,7 +2307,7 @@ function surveymover()
 		$surveymover .= "\t\t\t\t\t<input class='submit' type='submit' accesskey='l' onclick=\"javascript:document.limesurvey.move.value = 'movesubmit';\" value=' "
 		. $clang->gT("Submit")." ' name='move2' id='move2'/>\n";
 	}
-
+	$surveymover .= "</span>";
 //	$surveymover .= "<input type='hidden' name='PHPSESSID' value='".session_id()."' id='PHPSESSID' />\n";
 	return $surveymover;
 }
