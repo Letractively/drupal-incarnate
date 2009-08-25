@@ -2811,10 +2811,14 @@ function do_multipleshorttext($ia)
 	 */
 	$label_extras = "";
 	$label_extras2 = "";
+	$font_sizing = "";
+	$font_sizing2 = "";
 	//print_r($ia);
 	if ($ia[2] == "PCRC1" || $ia[2] == "PCIC1" || $ia[2] == "PCOC1") {
 		$label_extras = " align='right' valign='top'";
 		$label_extras2 = " align='left'";
+		$font_sizing = "<font size='3'>";
+		$font_sizing2 = "</font>";
 	}
 	if ($ia[2] == "OPS_1") {
 		$label_extras = " align='left' valign='middle'";
@@ -2895,7 +2899,7 @@ function do_multipleshorttext($ia)
 			
 			$myfname = $ia[1].$ansrow['code'];
 			$answer_main .= "\t<tr bgcolor='$row_color'>\n"
-			. "\t\t<td".$label_extras."><label for=\"answer$myfname\">{$ansrow['answer']}</label></td>\n"
+			. "\t\t<td".$label_extras."><label for=\"answer$myfname\">$font_sizing{$ansrow['answer']}$font_sizing2</label></td>\n"
 			. "\t\t\t<td$label_extras2>\n\t\t\t\t".$prefix."\n\t\t\t\t".'<input class="text" type="text" name="'.$myfname.'" id="answer'.$myfname.'" value="';
 
 			if($label_width < strlen(trim(strip_tags($ansrow['answer']))))
