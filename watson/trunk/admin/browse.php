@@ -327,6 +327,7 @@ if ($subaction == "id") // Looking at a SINGLE entry
 		."<img align='left' hspace='0' border='0' src='$imagefiles/delete.png' alt='' title='' onclick=\"if (confirm('".$clang->gT("Are you sure you want to delete this entry?","js")."')) {".get2post($scriptname.'?action=dataentry&amp;subaction=delete&amp;id='.$id.'&amp;sid='.$surveyid.'&amp;surveytable='.$surveytableNq)."}\" /></a>\n";
 		//echo get2post($scriptname.'?action=dataentry&amp;subaction=delete&amp;id=$id&amp;sid='.$surveyid.'&amp;surveytable='.$surveytable);
 	}
+	
 	 $browseoutput .= "\t\t\t<a href='$scriptname?action=exportresults&amp;sid=$surveyid&amp;id=$id'" .
 		"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Export this Response", "js")."')\">" .
 		"<img name='ExportAnswer' src='$imagefiles/export.png' title='' alt='". $clang->gT("Export this Response")."'align='left' /></a>\n"
@@ -338,8 +339,16 @@ if ($subaction == "id") // Looking at a SINGLE entry
 	."\t\t\t<img src='$imagefiles/blank.gif' width='13' height='20' border='0' hspace='0' align='left' alt='' />\n"
 	."\t\t\t<a href='$scriptname?action=browse&amp;subaction=id&amp;id=$next&amp;sid=$surveyid&amp;surveytable=$surveytable'" .
 			"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Show next...", "js")."')\">" .
-		"<img name='DataForward' align='left' src='$imagefiles/dataforward.png' alt='' /></a>\n"
-	."\t\t</td>\n"
+		"<img name='DataForward' align='left' src='$imagefiles/dataforward.png' alt='' /></a><img src='$imagefiles/blank.gif' width='20' height='20' border='0' hspace='0' align='left' alt='' /><img src='$imagefiles/seperator.gif' border='0' hspace='0' align='left' alt='' />";
+	
+	//for the personal constructs survey only
+	if ($surveyid == '61424'){
+		$browseoutput .= "<a target='_new' href='$scriptname?action=pc_summary&amp;subaction=id&amp;id=$id&amp;sid=$surveyid&amp;surveytable=$surveytable'" .
+			"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Show Summary", "js")."')\">".
+		"<img name='pcSummary' align='left' src='$imagefiles/statistics.png' alt='' /></a>\n\n";
+	}
+	
+	$browseroutput .= "\t\t</td>\n"
 	."\t</tr>\n"
 	."\t<tr><td colspan='2' bgcolor='#CCCCCC' height='1'></td></tr>\n";
 	$idresult = db_execute_assoc($idquery) or safe_die ("Couldn't get entry<br />$idquery<br />".$connect->ErrorMsg());
