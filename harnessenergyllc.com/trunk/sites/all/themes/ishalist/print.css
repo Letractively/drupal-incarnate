@@ -1,0 +1,70 @@
+/* $Id: print.css,v 1.2 2009/04/16 09:35:29 ishmaelsanchez Exp $
+ *
+ * This is file is for print media solely
+ * 
+ */
+
+/* Set up basic print standards*/
+body
+  {
+    background-color:#fff; /*Reduce the amount of ink used*/
+    color:#000;
+    font-family: Times, "Times New Romans", serif;
+    font-size: 12pt; /*Setting an acutal point size*/
+    width:95%;
+  }
+
+#outer-wrapper
+  {
+    margin: 5pt;
+    width: 90%; /*Shrink content*/
+  }
+
+#header a /*Remove underline from header*/
+  {
+    text-decoration: none;
+  }
+  
+#header h1  /*Display Title and Logo on same line*/
+  {
+  	display:inline;
+	padding:0 100pt 0 0;
+  }
+
+#header h1 a /*Make header link color black*/
+  {
+  	color:#000;
+  }
+  
+#header img /*Remove link border from image*/
+  {
+  	border:none;
+	padding-top:5pt;
+  }
+  
+/*Hide navigation and other elements*/
+.primary-links, .secondary-links, #search, .tabs, .links, .breadcrumb, .taxonomy, .pager, .feed-icon, #primary-box, #secondary-box, #tertiary-box
+  {
+    visibility:hidden;
+    display:none;
+  }
+
+a /*Links are styled sightly different*/
+  {
+    color:#333;
+    text-decoration: underline;
+	font-size:95%;
+    font-weight:normal;
+  }
+
+/* CSS2 selector to add link references to after links in the main content area*/  
+#main-inner a:link:after, #main-inner a:visited:after
+  {
+    content: " (" attr(href) ") "; 
+  }
+
+.submitted /*Submitted info styled different*/
+  {
+    color:#ccc;
+	font-size:10pt;
+  }

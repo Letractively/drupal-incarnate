@@ -1,0 +1,209 @@
+/* $Id: drupal.css,v 1.4 2009/07/22 05:55:33 ishmaelsanchez Exp $
+ * 
+ * This file modifies Drupal specific CSS for certain elements: taxonomy, comments, breadcrumb, informational tables, etc.
+ *
+ */
+
+.terms /*Taxonomy text*/
+  {
+  float:right;
+  }
+.terms a /*Taxonomy links*/
+  {
+  color:#990000;
+  }
+
+.terms a:visited /*Visted Taxonomy links styled differently*/
+  {
+  color:#fff;
+  }
+
+.comment_comments a
+  {
+  color:#990000;
+  }
+  
+.new  /*New comment posting style*/
+  {
+  color:#717171;
+	font-weight:bold;
+	font-variant:small-caps;
+  }
+  
+.comment-add
+  {
+  padding:.5em 0;
+  }
+
+.links
+  {
+  font-size:.875em;
+	font-style:italic;
+  }
+  
+.links a
+  {
+  text-decoration:none;
+  }
+  
+.submitted /*Appear under the node title*/
+  {
+  color:#717171;
+  font-size:.8em;
+  margin:-3px 0 0 0;
+  }
+  
+.breadcrumb
+  {
+  color:#999;  /*For the seperator*/
+	font-size:.8em;
+	margin:0 0 -10px 0;  /*Lowering into the padding of main*/
+	padding:15px 0 0 0; /*Adding space to elements above*/
+  }
+
+.breadcrumb a /*Breadcrum link*/
+  {
+  color:#990000;
+  }
+  
+.block ul  /*Any ul that appears in a block*/
+  {
+	margin:0;
+	padding:0 0 0.25em 1em;
+  }
+  
+.logged-in #outer-wrapper #main .messages a, .logged-in #outer-wrapper #main .help a
+  {
+	color:#000;
+  }
+  
+.status /*Appears during page updates and succesful completion of tasks, like cron*/
+  {
+  background-color:#33CC33;
+  border:2px solid #006600;
+  font-size:.95em;
+  font-weight:bold;
+  margin:.25em 0;
+  padding:0.25em 0.75em;
+  text-align:center;
+  }
+  
+.help /*Drupal informational messages*/
+  {
+  background-color:#33CC33;
+  border:2px solid #006600;
+  font-size:.95em;
+  margin:.25em 0;
+  padding:0.25em 0.75em;
+  }
+  
+tr.even, tr.odd /*Informational tables, like the ones that appear on the /admin/build/block page */
+  {
+	color:#000;
+  
+  }
+
+.description /*Adds padding around information tables like on /filter/tips */
+  {
+  padding:.2em .5em;
+  } 
+
+.page-admin table, .logged-in table
+  {
+  border-collapse:collapse; /*Give uniform look to admin pages or other module pages with tables*/
+  }
+
+#admin-menu li /*If you are using admin menu increases the font*/
+  {
+  font-size:1.1em;
+  }
+ 
+.item-list ul li /*Override Drupal disc defintion*/
+  {
+	list-style-type:circle;
+  }
+
+.views-exposed-form label /*Shrink down labels, ex. with views with exposed filters*/
+  {
+  font-size:.9em;
+	font-weight:normal;
+  }
+
+#edit-tabs ul.primary li a:visited, ul.primary li a:active  /*Make edit tab text visible always*/
+ {
+ 	color:#000;
+ }
+
+/*Custom Drupal CSS Definitions*/
+
+.front #main #main-inner h2 a /*Overides default home page H2 link style*/
+  {
+  color:#fff;
+	text-decoration:none;
+  }
+  
+.logged-in #main a:visited /*Override visted CSS on admin pages*/
+  {
+  color:#FF0000;
+  }
+
+.page-user #main-nav
+  {
+  display:none;
+  }
+	
+#edit-tabs
+  {
+	margin:1em 0;
+	}
+
+.item-list ul li
+	{
+	margin:0 0 0.5em 1.5em;
+	}
+  
+.node-unpublished, .comment-unpublished
+  {
+  border:1px dashed #f00;
+  color:#000;
+  padding:.5em 1em;
+  }
+  
+#views-ajax-form /*Views editing*/
+  {
+  color:#000;
+  }
+  
+.page-admin #main
+  {
+  margin:0;
+  padding:0;
+  }
+
+.admin-panel h3
+  {
+	border-bottom:2px solid #fff;
+  font-family:arial, sans-serif;
+	padding-bottom:2px;
+	margin:5px;
+  }
+
+.admin-panel .body p
+  {
+	color:#999;
+  }
+
+.page-admin tr.even td a, .page-admin tr.odd td a /* Add spacing on Drupal admin tables */ 
+  {
+  font-size:.9em;
+  }
+
+.page-admin #system-themes-form tr.odd td a, .page-admin #system-themes-form tr.even td a /*Removes spacing on theme page*/
+  {
+	padding:0;
+  }
+
+.tableHeader-processed tr td
+  {
+  padding:.2em .35em;
+  }
