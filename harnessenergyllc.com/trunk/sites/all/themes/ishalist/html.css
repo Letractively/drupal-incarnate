@@ -1,0 +1,113 @@
+/* $Id: html.css,v 1.6 2009/07/22 05:55:33 ishmaelsanchez Exp $
+ *
+ * Basic HTML Elements 
+ *
+ */
+ 
+body
+  {
+	background-color:#fff;
+	font-size:100%; 
+	font-family:"Trebuchet MS", Helvetica, arial, sans-serif;
+	margin:0; 
+	padding:0; 
+  }
+  
+h1 /*H1 is only used as the site name in the header*/
+  {
+	font-size:2.4em;  
+	font-family:Times, "Times New Roman", Georgia, "Bitstream Vera Serif", serif;
+	font-variant:small-caps;
+  }
+
+h2
+  {
+  font-family:Georgia, "Bitstream Vera Serif", Times, serif;
+  font-size:1.4em;
+	letter-spacing:.175em;
+	margin:.25em 0;
+	padding:.25em 0;
+	text-transform:uppercase;
+  }
+
+h3
+  {
+  font-family:Georgia, "Bitstream Vera Serif", Times, serif;
+  font-size: 1.3em;
+  font-weight:normal;
+  margin:.25em 0;
+  padding:.25em 0;
+  }
+
+h4, h5, h6
+  {
+  font-family:Georgia, "Bitstream Vera Serif", Times, serif;
+  font-size: 1.15em;
+  margin:.25em 0;
+  padding:.25em 0;
+  }
+
+a
+  {
+  color:red;
+  text-decoration:underline;
+  }
+
+hr
+  {
+  border: 1px solid #c5c5c5;
+	height: 1px;
+  }
+
+p
+  {
+  margin:.25em 0;
+	padding:.25em 0;
+  }
+
+ul, ol
+  {
+  margin:.5em 0;
+  padding:.25em 2em;
+  }
+
+ul li
+  {
+	list-style-type:circle;
+	margin:0;
+	padding:0.2em 0;
+  }
+	
+ol li
+  {
+	margin:0;
+	padding:0.15em 0;
+  }
+ 
+form
+  {
+  margin: 0;
+  padding: 0;
+  }
+
+table
+  {
+  margin:.25em .5em;
+	border-collapse:separate;
+  }
+
+pre, code
+  {
+  font-size:1.10em; /*Monospace type tends to be small*/
+	line-height:1em;
+  }
+  
+dd
+  {
+  margin:0 1.25em;
+  padding:.5em 0;
+  }
+legend
+  {
+  color:#900;
+  }

@@ -1,0 +1,49 @@
+; // $Id: ishalist.info,v 1.4 2009/07/22 05:55:33 ishmaelsanchez Exp $
+
+; The name and description of theme appear on the /admin/build/themes page. 
+name = ishalist	
+description = Minimalist and sidebar-less theme. Tableless and fixed width.
+
+; "core" Tells Drupal that this theme is compatible with a particular Drupal version.
+; "engine" is the template type, required for a phptemplate theme.
+core   = 6.x
+engine = phptemplate
+
+; End required items, below are features of this theme
+
+; Sreenshot, a visual of the actual theme. The image is displayed at /admin/build/themes
+screenshot = screenshot.png
+
+; These elements are output by the theme, but can be turned on or off.
+; "features" appear as check boxes on admin/build/themes.
+features[] = favicon
+features[] = logo
+features[] = name
+features[] = primary_links
+features[] = secondary_links
+
+; Edit, add, or remove the CSS styles and JS based on your needs. 
+stylesheets[all][]  = drupal.css
+stylesheets[all][]  = html.css
+conditional-stylesheets[if IE][all][] = ie.css
+stylesheets[all][]  = ishalist.css
+stylesheets[print][] = print.css
+scripts[] = scripts.js
+
+; Regions are output in the page.tpl.php file. Variables output in page.tpl.php file. 
+; The text after the equals sign is a descriptive text used on the admin/build/blocks page.
+
+regions[content_top] = Content Top
+regions[content] = Content
+regions[content_bottom] = Content Bottom
+regions[primary_box] = Primary Box
+regions[secondary_box] = Secondary Box
+regions[tertiary_box] = Tertiary Box
+regions[footer] = Footer
+
+; Information added by drupal.org packaging script on 2009-07-22
+version = "6.x-2.1"
+core = "6.x"
+project = "ishalist"
+datestamp = "1248246947"
+
