@@ -39,7 +39,7 @@ fieldset {
 
 legend {
   font-weight: bold;
-  color: #3c78a7;
+  color: #ff6600;
 }
 
 p {	
@@ -47,12 +47,12 @@ p {
 }
 
 a:link, a:visited {
-	color: #3c78a7;
+	color: #ff6600;
 	text-decoration:none
 }
 
 a:hover, a:active {
-	color: #3c78a7;
+	color: #ff6600;
 	text-decoration:underline;
 }
 
@@ -81,7 +81,7 @@ li{
 /* Text*/
 
 h1, h2, h3, h4 {
-	color:#3c78a7;
+	color:#ff6600;
 }
 
 h1 {
@@ -182,7 +182,7 @@ blockquote {
 }
 
 #page-bar li:hover, #page-bar li a:hover {
-	background: #3c78a7;
+	background: #ff6600;
 }
 
 #page-bar a, #page-bar a:visited {
@@ -420,7 +420,7 @@ blockquote {
 #content table th {
   background-color:#C8DBEA;
   padding: 2px 5px;
-  color: #3c78a7;
+  color: #ff6600;
   line-height:1.5em;
 }
 
@@ -462,7 +462,7 @@ blockquote {
 .status {
 	border: 1px solid #C8DBEA;
 	background-color: #DAE7F1;
-  color: #3c78a7;
+  color: #ff6600;
 }
 
 /* Sidebar */
@@ -482,7 +482,7 @@ blockquote {
 }
 
 #sidebar .odd h3 {
-  background:#3c78a7;
+  background:#ff6600;
 }
 
 #sidebar h3 a{
@@ -650,7 +650,7 @@ blockquote {
 }
 
 #footer-region li:hover {
-	background:#3c78a7;
+	background:#ff6600;
 	color:#fff;
 }
 
@@ -720,13 +720,13 @@ blockquote {
   margin:10px 2px!important;
 	text-decoration: none;
 	border: 1px solid #C8DBEA!important;
-	color: #3c78a7;
+	color: #ff6600;
 	background-color: #EDF3F8;
   background-image:none!important;
 }
 
 .pager li a {
-	color: #3c78a7;
+	color: #ff6600;
 }
 
 .pager li:hover  {
