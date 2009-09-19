@@ -160,6 +160,21 @@ if ($action == 'pc_summary')
 	if($surrows['activate_survey'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('pcSummary.php');}
         else { include('access_denied.php');}    
 }
+if ($action == 'cc_summary')
+{
+	if($surrows['activate_survey'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('ccSummary.php');}
+        else { include('access_denied.php');}    
+}
+if ($action == 'iis_summary')
+{
+	if($surrows['activate_survey'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('iisSummary.php');}
+        else { include('access_denied.php');}    
+}
+if ($action == 'ios_summary')
+{
+	if($surrows['activate_survey'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('iosSummary.php');}
+        else { include('access_denied.php');}    
+}
 if ($action == 'activate')
     {
     if($surrows['activate_survey'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('activate.php');}
