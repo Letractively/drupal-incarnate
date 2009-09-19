@@ -193,8 +193,9 @@ $dquery .= " ORDER BY $surveytable.id";
 	//echo '<br><br>' . $dquery;
 	//$dresult = db_execute_assoc($dquery);
 	$dresult = db_select_limit_assoc($dquery, $limit_interval, $from_record);
-	
-	//print_r($dresult);
+	//echo "</center><pre>";
+	//	print_r($dresult);
+	//echo '</pre>';
 	$rowcounter=0;
 	while ($drow = $dresult->FetchRow())
 	{
@@ -404,30 +405,55 @@ $dquery .= " ORDER BY $surveytable.id";
 		<?php 
 		
 		
-		$pcri = (abs($drow['61424X41X136RR1'] - $drow['61424X30X106RI1']) + 
-					abs($drow['61424X30X106RR3'] - $drow['61424X42X137RI3']) +
-					abs($drow['61424X30X106RR4'] - $drow['61424X46X143RI4']) + 
-					abs($drow['61424X42X137RR5'] - $drow['61424X42X137RI5']) /*+
-					abs(PCRS6 - PCIS6) + abs(PCRS9 - PCIS9) +
-
-              abs(PCRS10 - PCIS10) + abs(PCRS13 - PCIS13) +
-
-              abs(PCRS14 - PCIS14) + abs(PCRS15 - PCIS15) +
-
-              abs(PCRS16 - PCIS16) + abs(PCRS17 - PCIS17) +
-
-              abs(PCRS19 - PCIS19) + abs(PCRS23 - PCIS23) +
-
-              abs(PCRS24 - PCIS24) + abs(PCRS25 - PCIS25) +
-
-              abs(PCRS26 - PCIS26) + abs(PCRS28 - PCIS28) +
-
-              abs(PCRS29 - PCIS29) + abs(PCRS31 - PCIS31) +
-
-              abs(PCRS33 - PCIS33) + abs(PCRS34 - PCIS34) +
-
-              abs(PCRS35 - PCIS35) + abs(PCRS36 - PCIS36)*/) / 24;
+		$pcri = (abs($drow['61424X30X106ROPR1'] - $drow['61424X44X140ROPR1']) + 
+					abs($drow['61424X30X106RI1'] - $drow['61424X44X140RI1']) +
+					abs($drow['61424X30X106ROPR3'] - $drow['61424X44X140ROPR3']) + 
+					abs($drow['61424X30X106ROPI6'] - $drow['61424X30X106ROPI6']) +
+					abs($drow['61424X30X106RR4'] - $drow['61424X44X140RR4']) + 
+					abs($drow['61424X30X106RR6'] - $drow['61424X44X140RR6']) +
+             		abs($drow['61424X30X106RR3'] - $drow['61424X44X140RR3']) + 
+             		abs($drow['61424X41X136RR1'] - $drow['61424X45X141RR1']) +
+              		abs($drow['61424X41X136ROPI5'] - $drow['61424X45X141ROPI5']) + 
+              		abs($drow['61424X41X136RI6'] - $drow['61424X45X141RI6']) +
+					abs($drow['61424X41X136ROPR5'] - $drow['61424X45X141ROPR5']) + 
+					abs($drow['61424X41X136ROPR2'] - $drow['61424X45X141ROPR2']) +
+					abs($drow['61424X41X136ROPR4'] - $drow['61424X45X141ROPR4']) + 
+					abs($drow['61424X41X136ROPI4'] - $drow['61424X45X141ROPI4']) +
+					abs($drow['61424X41X136RR2'] - $drow['61424X45X141RR2']) + 
+					abs($drow['61424X42X137ROPI2'] - $drow['61424X46X143ROPI2']) +
+					abs($drow['61424X42X137RI3'] - $drow['61424X46X143RI3']) + 
+					abs($drow['61424X42X137ROPI1'] - $drow['61424X46X143ROPI1']) +
+					abs($drow['61424X42X137ROPR6'] - $drow['61424X46X143ROPR6']) + 
+					abs($drow['61424X42X137RI2'] - $drow['61424X46X143RI2']) +
+					abs($drow['61424X42X137RI4'] - $drow['61424X46X143RI4']) + 
+					abs($drow['61424X42X137ROPI3'] - $drow['61424X46X143ROPI3']) +
+					abs($drow['61424X42X137RR5'] - $drow['61424X46X143RR5']) + 
+					abs($drow['61424X42X137RI5'] - $drow['61424X46X143RI5']) )/ 24;
 		
+		$pcro = (abs($drow['61424X30X106ROPR1'] - $drow['61424X48X139ROPR1']) + 
+					abs($drow['61424X30X106RO1']  - $drow['61424X48X139RO1'] ) +
+                   	abs($drow['61424X30X106ROPR3'] - $drow['61424X48X139ROPR3']) + 
+                   	abs($drow['61424X30X106RR4'] - $drow['61424X48X139RR4']) +
+              		abs($drow['61424X30X106RO4'] - $drow['61424X48X139RO4']) + 
+              		abs($drow['61424X30X106RO6'] - $drow['61424X48X139RO6']) +
+              		abs($drow['61424X30X106RR6'] - $drow['61424X48X139RO6']) + 
+              		abs($drow['61424X30X106RR6'] - $drow['61424X48X139RR6']) +
+              		abs($drow['61424X30X106RR3'] - $drow['61424X48X139RR3']) + 
+              		abs($drow['61424X30X106ROPO5'] - $drow['61424X48X139ROPO5']) +
+              		abs($drow['61424X41X136RR1'] - $drow['61424X49X142RR1']) + 
+              		abs($drow['61424X41X136ROPR5'] - $drow['61424X49X142ROPR5']) +
+              		abs($drow['61424X41X136ROPR2'] - $drow['61424X49X142ROPR2'] ) + 
+              		abs($drow['61424X41X136RO5'] - $drow['61424X49X142RO5']) +
+              		abs($drow['61424X41X136ROPR4'] - $drow['61424X49X142ROPR4']) + 
+              		abs($drow['61424X41X136ROPO1'] - $drow['61424X49X142ROPO1']) +
+              		abs($drow['61424X41X136ROPO3'] - $drow['61424X49X142ROPO3']) + 
+              		abs($drow['61424X41X136RO3'] - $drow['61424X49X142RO3']) +
+              		abs($drow['61424X41X136RR2'] - $drow['61424X49X142RR2']) + 
+              		abs($drow['61424X42X137ROPO4'] - $drow['61424X50X144ROPO4']) +
+              		abs($drow['61424X42X137ROPR6'] - $drow['61424X50X144ROPR6']) + 
+              		abs($drow['61424X42X137RO2'] - $drow['61424X50X144RO2']) +
+              		abs($drow['61424X42X137ROPO6'] - $drow['61424X50X144ROPO6']) + 
+              		abs($drow['61424X42X137RR5'] - $drow['61424X50X144RR5'])) / 24.
 		
 		
 		
@@ -462,7 +488,7 @@ $dquery .= " ORDER BY $surveytable.id";
     
     //echo "$exportoutput";
 
-	echo "</center>;";
+	echo "</center>";
 	exit;
 
 
