@@ -347,6 +347,24 @@ if ($subaction == "id") // Looking at a SINGLE entry
 			"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Show Summary", "js")."')\">".
 		"<img name='pcSummary' align='left' src='$imagefiles/statistics.png' alt='' /></a>\n\n";
 	}
+	//for the canventional constructs survey only
+	else if ($surveyid == '47831'){
+		$browseoutput .= "<a target='_new' href='$scriptname?action=cc_summary&amp;subaction=id&amp;id=$id&amp;sid=$surveyid&amp;surveytable=$surveytable'" .
+			"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Show Summary", "js")."')\">".
+		"<img name='pcSummary' align='left' src='$imagefiles/statistics.png' alt='' /></a>\n\n";
+	}
+	//for the importance of ideal self survey only
+	else if ($surveyid == '67237'){
+		$browseoutput .= "<a target='_new' href='$scriptname?action=iis_summary&amp;subaction=id&amp;id=$id&amp;sid=$surveyid&amp;surveytable=$surveytable'" .
+			"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Show Summary", "js")."')\">".
+		"<img name='pcSummary' align='left' src='$imagefiles/statistics.png' alt='' /></a>\n\n";
+	}
+	//for the importance of ought self survey only
+	else if ($surveyid == '99757'){
+		$browseoutput .= "<a target='_new' href='$scriptname?action=ios_summary&amp;subaction=id&amp;id=$id&amp;sid=$surveyid&amp;surveytable=$surveytable'" .
+			"onmouseout=\"hideTooltip()\" onmouseover=\"showTooltip(event,'".$clang->gT("Show Summary", "js")."')\">".
+		"<img name='pcSummary' align='left' src='$imagefiles/statistics.png' alt='' /></a>\n\n";
+	}
 	
 	$browseroutput .= "\t\t</td>\n"
 	."\t</tr>\n"
