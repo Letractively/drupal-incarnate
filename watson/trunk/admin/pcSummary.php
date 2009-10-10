@@ -193,9 +193,9 @@ $dquery .= " ORDER BY $surveytable.id";
 	//echo '<br><br>' . $dquery;
 	//$dresult = db_execute_assoc($dquery);
 	$dresult = db_select_limit_assoc($dquery, $limit_interval, $from_record);
-	//echo "</center><pre>";
-	//	print_r($dresult);
-	//echo '</pre>';
+	echo "</center><pre>";
+	print_r($dresult);
+	echo '</pre>';
 	$rowcounter=0;
 	while ($drow = $dresult->FetchRow())
 	{
@@ -408,7 +408,7 @@ $dquery .= " ORDER BY $surveytable.id";
 		$pcri = (abs($drow['61424X30X106ROPR1'] - $drow['61424X44X140ROPR1']) + 
 					abs($drow['61424X30X106RI1'] - $drow['61424X44X140RI1']) +
 					abs($drow['61424X30X106ROPR3'] - $drow['61424X44X140ROPR3']) + 
-					abs($drow['61424X30X106ROPI6'] - $drow['61424X30X106ROPI6']) +
+					abs($drow['61424X30X106ROPI6'] - $drow['61424X44X140ROPI6']) +
 					abs($drow['61424X30X106RR4'] - $drow['61424X44X140RR4']) + 
 					abs($drow['61424X30X106RR6'] - $drow['61424X44X140RR6']) +
              		abs($drow['61424X30X106RR3'] - $drow['61424X44X140RR3']) + 
@@ -453,7 +453,7 @@ $dquery .= " ORDER BY $surveytable.id";
               		abs($drow['61424X42X137ROPR6'] - $drow['61424X50X144ROPR6']) + 
               		abs($drow['61424X42X137RO2'] - $drow['61424X50X144RO2']) +
               		abs($drow['61424X42X137ROPO6'] - $drow['61424X50X144ROPO6']) + 
-              		abs($drow['61424X42X137RR5'] - $drow['61424X50X144RR5'])) / 24.
+              		abs($drow['61424X42X137RR5'] - $drow['61424X50X144RR5'])) / 24;
 		
 		
 		
