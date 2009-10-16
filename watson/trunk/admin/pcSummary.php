@@ -194,8 +194,8 @@ $dquery .= " ORDER BY $surveytable.id";
 	//$dresult = db_execute_assoc($dquery);
 	$dresult = db_select_limit_assoc($dquery, $limit_interval, $from_record);
 	echo "</center><pre>";
-	print_r($dresult);
-	echo '</pre>';
+	/*print_r($dresult);
+	echo '</pre>';*/
 	$rowcounter=0;
 	while ($drow = $dresult->FetchRow())
 	{
