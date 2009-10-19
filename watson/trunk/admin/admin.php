@@ -289,7 +289,12 @@ elseif ($action == 'exportspss')
     {
     if($surrows['export'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('export_data_spss.php');}
         else { include('access_denied.php');}    
-    }    
+    }   
+elseif ($action == 'exportlegacycsv')
+    {
+    if($surrows['export'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('export_data_csv_61424.php');}
+        else { include('access_denied.php');}    
+    }  
 elseif ($action == 'exportr')
     {
     if($surrows['export'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('export_data_r.php');}
