@@ -291,9 +291,15 @@ elseif ($action == 'exportspss')
         else { include('access_denied.php');}    
     }   
 elseif ($action == 'exportlegacycsv')
-    {
-    if($surrows['export'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1)    {include('export_data_csv_61424.php');}
-        else { include('access_denied.php');}    
+    {	
+    	if ($surveyid == "61424" || $surveyid == "47831") {
+		    if($surrows['export'] || $_SESSION['USER_RIGHT_SUPERADMIN'] == 1) {
+		    	include("export_data_csv_$surveyid.php");
+		    }
+		    else { 
+		    	include('access_denied.php');
+		    }    
+    	}
     }  
 elseif ($action == 'exportr')
     {
