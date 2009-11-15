@@ -1,0 +1,137 @@
+# translation of slideshow_creator-module.po to Portuguese (Brasil)
+# $Id: nl.po,v 1.1.2.1 2008/07/06 06:19:14 brmassa Exp $
+# LANGUAGE translation of Drupal (slideshow_creator.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# No version information was available in the source files.
+#
+# Bruno Massa Guimarães <bruno.massa@titanatlas.com>, 2007.
+msgid ""
+msgstr ""
+"Project-Id-Version: slideshow_creator-module\n"
+"POT-Creation-Date: 2007-03-18 15:10-0300\n"
+"PO-Revision-Date: 2007-04-30 11:13+0100\n"
+"Last-Translator: msn <mar-nie@home.nl>\n"
+"Language-Team: Portuguese (Brasil)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: slideshow_creator.module:24
+msgid "Create slideshows using the [slideshow: ...] tags."
+msgstr "Make slideshows met de [slideshow:...] code."
+
+#: slideshow_creator.module:26
+#: ;28
+msgid "Slideshow Creator filter"
+msgstr "Slideshow Creator filter"
+
+#: slideshow_creator.module:42
+msgid "Slideshows can be added to this post."
+msgstr "Slideshows kunnen aan deze inhoud worden toegevoegd."
+
+#: slideshow_creator.module:49
+#: slideshow_creator.info:0
+msgid "Create true slideshows using any image over internet with many other features."
+msgstr "Maak echte slideshows met willekeurige plaatjes op het internet en met vele extra mogelijkheden.  "
+
+#: slideshow_creator.module:50
+msgid "Slideshows are a series of images that are shown after each other. In modern browsers, the images are changed without reloading the entire page using JavaScript."
+msgstr "Slideshows zijn een serie plaatjes welke na elkaar worden getoond. In moderne browser worden de plaatjes vernieuwd zonder dat de gehele bladzijde wordt ververst door het gebruik van JavaScript."
+
+#: slideshow_creator.module:172
+msgid "Previous"
+msgstr "Terug"
+
+#: slideshow_creator.module:173
+msgid "Image"
+msgstr "Plaatje"
+
+#: slideshow_creator.module:174
+msgid "Next"
+msgstr "Volgende"
+
+#: slideshow_creator.module:0
+#: slideshow_creator.info:0
+#: slideshow_creator_cck.info:0
+msgid "slideshow_creator"
+msgstr "slideshow_creator"
+
+#: slideshow_creator_cck.module:94
+msgid "Images"
+msgstr "Plaatjes"
+
+#: slideshow_creator_cck.module:96
+#, fuzzy
+msgid "On each line, fill your slides using the IMAGE_URL|LINK|TITLE|DESCRIPTION|TARGET pattern."
+msgstr "Voeg op elke regel een 'slide' toe met IMAGE_URL|LINK|TITLE|DESCRIPTION|TARGET"
+
+#: slideshow_creator_cck.module:100
+msgid "Rotation"
+msgstr "Rotatie"
+
+#: slideshow_creator_cck.module:102
+msgid "The rotation speed, in seconds. Leave it blank for no rotation."
+msgstr "De rotatiesnelheid in seconden. Laat leeg indien geen automatische rotatie gewenst is."
+
+#: slideshow_creator_cck.module:107
+#: ;146
+msgid "Blend"
+msgstr "Overgang"
+
+#: slideshow_creator_cck.module:109
+msgid "The blending speed, in seconds. Leave it blank for no blending."
+msgstr "De rotatieovergang in seconden. Laat leeg indien geen overgang gewenst is"
+
+#: slideshow_creator_cck.module:114
+#: ;140
+msgid "Width"
+msgstr "Breedte"
+
+#: slideshow_creator_cck.module:116
+msgid "The image width, in pixels."
+msgstr "De breedte van het plaatje in pixels"
+
+#: slideshow_creator_cck.module:121
+#: ;137
+msgid "Height"
+msgstr "Hoogte"
+
+#: slideshow_creator_cck.module:123
+msgid "The image height, in pixels."
+msgstr "De hoogte van het plaatje in pixels."
+
+#: slideshow_creator_cck.module:128
+msgid "Layout"
+msgstr "Layout"
+
+#: slideshow_creator_cck.module:130
+msgid "The customized layout name. Leave it blank for default layout."
+msgstr "De aangepaste layout naam. Laat leeg voor de standaard layout."
+
+#: slideshow_creator_cck.module:137
+#: ;140;143;146
+msgid "must be a number."
+msgstr "moet een cijfer zijn."
+
+#: slideshow_creator_cck.module:143
+msgid "Rotate"
+msgstr "Rotatie"
+
+#: slideshow_creator_cck.module:158
+msgid "Slideshow"
+msgstr "Slideshow"
+
+#: slideshow_creator.info:0
+msgid "Slideshow Creator"
+msgstr "Slideshow Creator"
+
+#: slideshow_creator_cck.info:0
+msgid "Slidesshow Creator CCK"
+msgstr "Slideshow Creator CCK"
+
+#: slideshow_creator_cck.info:0
+msgid "Create true slideshows using CCK module"
+msgstr "Make slideshows in de CCK module"
+
