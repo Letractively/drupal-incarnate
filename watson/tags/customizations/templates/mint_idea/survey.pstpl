@@ -1,0 +1,6 @@
+<span style='font-size: 12px; font-weight: bold; width: 500px; text-align: right; float: right; padding-right: 10px;'>{PERCENTCOMPLETE}</span>
+<!--<div class="survey-survey">
+	<div class="survey-survey-description">{SURVEYDESCRIPTION}</div>
+	<div class="survey-survey-percent"></div>
+	<div class="survey-survey-language">{LANGUAGECHANGER}</div>
+</div>-->
