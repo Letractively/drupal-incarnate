@@ -1,6 +1,6 @@
 <?php
 /* 
-V4.990 11 July 2008  (c) 2000-2008 John Lim (jlim#natsoft.com). All rights reserved.
+V5.10 10 Nov 2009   (c) 2000-2009 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. 
@@ -50,13 +50,11 @@ class  ADODB_odbc_mssql extends ADODB_odbc {
 	function ServerInfo()
 	{
 	global $ADODB_FETCH_MODE;
-		$save = $ADODB_FETCH_MODE;
-		$ADODB_FETCH_MODE = ADODB_FETCH_NUM;
+		$save=$this->SetFetchMode(ADODB_FETCH_NUM);
 		$row = $this->GetRow("execute sp_server_info 2");
-		$ADODB_FETCH_MODE = $save;
+		$this->SetFetchMode($save);
 		if (!is_array($row)) return false;
-        
-		$arr['description'] = isset($row[2])?$row[2]:'';
+		$arr['description'] = $row[2];
 		$arr['version'] = ADOConnection::_findvers($arr['description']);
 		return $arr;
 	}
@@ -94,7 +92,7 @@ from sysforeignkeys
 where upper(object_name(fkeyid)) = $table
 order by constraint_name, referenced_table_name, keyno";
 		
-		$constraints =& $this->GetArray($sql);
+		$constraints = $this->GetArray($sql);
 		
 		$ADODB_FETCH_MODE = $save;
 		
@@ -116,14 +114,14 @@ order by constraint_name, referenced_table_name, keyno";
 		return $arr2;
 	}
 	
-	function &MetaTables($ttype=false,$showSchema=false,$mask=false) 
+	function MetaTables($ttype=false,$showSchema=false,$mask=false) 
 	{
 		if ($mask) {$this->debug=1;
 			$save = $this->metaTablesSQL;
 			$mask = $this->qstr($mask);
 			$this->metaTablesSQL .= " AND name like $mask";
 		}
-		$ret =& ADOConnection::MetaTables($ttype,$showSchema);
+		$ret = ADOConnection::MetaTables($ttype,$showSchema);
 		
 		if ($mask) {
 			$this->metaTablesSQL = $save;
@@ -131,14 +129,14 @@ order by constraint_name, referenced_table_name, keyno";
 		return $ret;
 	}
 	
-	function &MetaColumns($table)
+	function MetaColumns($table, $normalize=true)
 	{
 		$arr = ADOConnection::MetaColumns($table);
 		return $arr;
 	}
 	
 	
-	function &MetaIndexes($table,$primary=false)
+	function MetaIndexes($table,$primary=false, $owner=false)
 	{
 		$table = $this->qstr($table);
 
@@ -178,19 +176,10 @@ order by constraint_name, referenced_table_name, keyno";
         return $indexes;
 	}
 	
-	function _query($sql,$inputarr)
+	function _query($sql,$inputarr=false)
 	{
-/*
-		if (is_string($sql)) $sql = str_replace('||','+',$sql); 
-            $getIdentity = false;
-            if (!is_array($sql) && preg_match('/^\\s*insert/i', $sql)) {
-                $getIdentity = true;
-                $sql .= (preg_match('/;\\s*$/i', $sql) ? ' ' : '; ') . $this->identitySQL;
-            }
-*/        
-		
-        $rs = ADODB_odbc::_query($sql,$inputarr);
-        return $rs; 
+		if (is_string($sql)) $sql = str_replace('||','+',$sql);
+		return ADODB_odbc::_query($sql,$inputarr);
 	}
 	
 	function SetTransactionMode( $transaction_mode ) 
@@ -206,7 +195,7 @@ order by constraint_name, referenced_table_name, keyno";
 	
 	// "Stein-Aksel Basma" <basma@accelero.no>
 	// tested with MSSQL 2000
-	function &MetaPrimaryKeys($table)
+	function MetaPrimaryKeys($table)
 	{
 	global $ADODB_FETCH_MODE;
 	
@@ -230,14 +219,14 @@ order by constraint_name, referenced_table_name, keyno";
 		return $false;	  
 	}
 	
-	function &SelectLimit($sql,$nrows=-1,$offset=-1, $inputarr=false,$secs2cache=0)
+	function SelectLimit($sql,$nrows=-1,$offset=-1, $inputarr=false,$secs2cache=0)
 	{
 		if ($nrows > 0 && $offset <= 0) {
 			$sql = preg_replace(
 				'/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop." $nrows ",$sql);
-			$rs =& $this->Execute($sql,$inputarr);
+			$rs = $this->Execute($sql,$inputarr);
 		} else
-			$rs =& ADOConnection::SelectLimit($sql,$nrows,$offset,$inputarr,$secs2cache);
+			$rs = ADOConnection::SelectLimit($sql,$nrows,$offset,$inputarr,$secs2cache);
 			
 		return $rs;
 	}

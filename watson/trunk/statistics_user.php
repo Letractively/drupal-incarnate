@@ -1,3 +1,4 @@
+
 <?php
 /*
 * LimeSurvey
@@ -10,7 +11,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: statistics_user.php 6649 2009-04-15 22:44:16Z maziminke $
+* $Id: statistics_user.php 8166 2009-12-15 18:46:43Z c_schmitz $
 * 
 */
 
@@ -36,7 +37,6 @@ require_once(dirname(__FILE__).'/classes/core/startup.php');
 require_once(dirname(__FILE__).'/config-defaults.php');
 require_once(dirname(__FILE__).'/common.php');
 require_once(dirname(__FILE__).'/classes/core/language.php');
-require_once(dirname(__FILE__).'/classes/core/html_entity_decode_php4.php');
 
 
 //XXX enable/disable this for testing
@@ -73,6 +73,10 @@ if ($surveyid)
     else 
     {
         $surveyinfo=getSurveyInfo($surveyid);
+		// CHANGE JSW_NZ - let's get the survey title for display
+	    $thisSurveyTitle = $surveyinfo["name"];
+		// CHANGE JSW_NZ - let's get css from individual template.css - so define path
+		$thisSurveyCssPath = $surveyinfo["template"];
        if ($surveyinfo['publicstatistics']!='Y')
        {
           safe_die('The public statistics for this survey are deactivated.'); 
@@ -86,14 +90,6 @@ if ($surveyid)
     }
 }
 
-
-     
-//DEFAULT SETTINGS FOR TEMPLATES
-if (!$publicdir) {$publicdir=".";}
-$tpldir="$publicdir/templates";
-
-
-
 //we collect all the output within this variable
 $statisticsoutput ='';
 
@@ -105,7 +101,9 @@ if (isset($publicgraphs) && $publicgraphs == 1)
 {
     require_once('classes/pchart/pchart/pChart.class');
     require_once('classes/pchart/pchart/pData.class');
+    require_once('classes/pchart/pchart/pCache.class');
 
+    $MyCache = new pCache($tempdir.'/'); 
 	//$currentuser is created as prefix for pchart files
 	if (isset($_SERVER['REDIRECT_REMOTE_USER']))
 	{
@@ -125,32 +123,77 @@ if (isset($publicgraphs) && $publicgraphs == 1)
 // Set language for questions and labels to base language of this survey
 $language = GetBaseLanguageFromSurveyID($surveyid);
 
+
+
+//pick the best font file if font setting is 'auto'
+if ($chartfontfile=='auto')
+{
+    $chartfontfile='vera.ttf';
+    if ( $language=='ar')
+    {
+        $chartfontfile='KacstOffice.ttf';
+    }
+    elseif  ($language=='fa' )
+    {
+        $chartfontfile='KacstFarsi.ttf';
+    }
+
+}
+
+
+
 //set survey language for translations
 $clang = SetSurveyLanguage($surveyid, $language);
 
 
-//Delete any stats files from the temp directory that aren't from today.
-deleteNotPattern($tempdir, "STATS_*.png","STATS_".date("d")."*.png");
+//Create header (fixes bug #3097)
+$surveylanguage= $language;
+sendcacheheaders();
+if ( !$embedded )
+{
+	$header=  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+        	. "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"".$surveylanguage."\" lang=\"".$surveylanguage."\"";
+        if (getLanguageRTL($surveylanguage))
+        {
+            $header.=" dir=\"rtl\" ";
+        }
+        $header.= ">\n\t<head>\n"
+			. "<title>$sitename</title>\n"
+        	. "<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" />\n"
+			. "<link href=\"templates/".$thisSurveyCssPath."/template.css\" rel=\"stylesheet\" type=\"text/css\" />\n"
+        	. "</head>\n<body>\n";
+        	
+        echo $header;     
+}
+
+global $embedded_headerfunc;
+
+if ( function_exists( $embedded_headerfunc ) )
+echo $embedded_headerfunc();
 
 
 /*
  * only show questions where question attribute "public_statistics" is set to "1"
  */
 $query = "SELECT ".db_table_name("questions").".*, group_name, group_order\n"
-."FROM ".db_table_name("questions").", ".db_table_name("groups").", ".db_table_name("survey_$surveyid").", ".db_table_name("question_attributes")."\n"
+."FROM ".db_table_name("questions").", ".db_table_name("groups").", ".db_table_name("question_attributes")."\n"
 ."WHERE ".db_table_name("groups").".gid=".db_table_name("questions").".gid\n"
 ."AND ".db_table_name("groups").".language='".$language."'\n"
 ."AND ".db_table_name("questions").".language='".$language."'\n"
 ."AND ".db_table_name("questions").".sid=$surveyid\n"
 ."AND ".db_table_name("questions").".qid=".db_table_name("question_attributes").".qid\n"
-."AND ".db_table_name("question_attributes").".attribute='public_statistics'\n"
-."AND ".db_table_name("question_attributes").".value='1'\n";
-
-//check filter setting in config file
-if ($filterout_incomplete_answers == true) 
+."AND ".db_table_name("question_attributes").".attribute='public_statistics'\n";
+if ($databasetype=='mssql_n' or $databasetype=='mssql' or $databasetype=='odbc_mssql' )
 {
-	$query .= " AND ".db_table_name("survey_$surveyid").".submitdate is not null";
+    $query .="AND CAST(CAST(".db_table_name("question_attributes").".value as varchar) as int)='1'\n";
 }
+else
+    {
+        $query .="AND ".db_table_name("question_attributes").".value='1'\n";
+    }
+
+
+
 	
 //execute query
 $result = db_execute_assoc($query) or safe_die("Couldn't do it!<br />$query<br />".$connect->ErrorMsg());
@@ -202,7 +245,7 @@ foreach ($rows as $row)
 	$row['type'],
 	$row['title'],
 	$row['group_name'],
-	strip_tags($row['question']),
+	FlattenText($row['question']),
 	$row['lid'],
     $row['lid1']);
     
@@ -323,7 +366,7 @@ foreach ($rows as $row)
 		
 		
 		case "C": // ARRAY OF YES\No\$clang->gT("Uncertain") QUESTIONS
-		$statisticsoutput .= "\t\t\t\t</tr>\n\t\t\t\t<tr>\n";
+		$statisticsoutput .= "</tr>\n<tr>\n";
 		
 		//get answers
 		$query = "SELECT code, answer FROM ".db_table_name("answers")." WHERE qid='$flt[0]' AND language='{$language}' ORDER BY sortorder, answer";
@@ -424,7 +467,7 @@ foreach ($rows as $row)
 		
 		
         case "1": // MULTI SCALE
-        $statisticsoutput .= "\t\t\t\t</tr>\n\t\t\t\t<tr>\n";
+        $statisticsoutput .= "</tr>\n<tr>\n";
                 
         //get answers
         $query = "SELECT code, answer FROM ".db_table_name("answers")." WHERE qid='$flt[0]' AND language='{$language}' ORDER BY sortorder, answer";
@@ -521,28 +564,28 @@ foreach ($rows as $row)
 		//Get qidattributes for this question
     	$qidattributes=getQuestionAttributes($flt[0]);
     	
-    	if ($maxvalue=arraySearchByKey("multiflexible_max", $qidattributes, "attribute", 1)) {
-    		$maxvalue=$maxvalue['value'];
+        if (trim($qidattributes['multiflexible_max'])!='') {
+    		$maxvalue=$qidattributes['multiflexible_max'];
     	} 
     	else {
     		$maxvalue=10;
     	}
     	
-    	if ($minvalue=arraySearchByKey("multiflexible_min", $qidattributes, "attribute", 1)) {
-    		$minvalue=$minvalue['value'];
+        if (trim($qidattributes['multiflexible_min'])!='') {
+    		$minvalue=$qidattributes['multiflexible_min'];
     	} 
     	else {
     		$minvalue=1;
     	}
     	
-    	if ($stepvalue=arraySearchByKey("multiflexible_step", $qidattributes, "attribute", 1)) {
-    		$stepvalue=$stepvalue['value'];
+        if (trim($qidattributes['multiflexible_step'])!='') {
+    		$stepvalue=$qidattributes['multiflexible_step'];
     	} 
     	else {
     		$stepvalue=1;
     	}
     	
-    	if (arraySearchByKey("multiflexible_checkbox", $qidattributes, "attribute", 1)) {
+        if ($qidattributes['multiflexible_checkbox']!=0) {
     		$minvalue=0;
     		$maxvalue=1;
     		$stepvalue=1;
@@ -616,13 +659,16 @@ for (reset($_POST); $key=key($_POST); next($_POST))
 }
 
 //show some main data at the beginnung
-$statisticsoutput .= "<br />\n<table align='center' width='95%' border='1'  "
-."cellpadding='2' cellspacing='0' >\n"
-."\t<tr><td colspan='2' align='center'><strong>"
-.$clang->gT("Total records in survey").": $totalrecords</strong></td></tr>\n";
+// CHANGE JSW_NZ - let's allow html formatted questions to show
+$statisticsoutput .= "\n<div id='statsContainer'>\n"
+."\t<div id='statsHeader'> \n"
+."\t\t<div class='statsSurveyTitle'>"
+."$thisSurveyTitle</div>\n"
+."\t\t<div class='statsNumRecords'>"
+.$clang->gT("Total records in survey")." : $totalrecords</div>\n";
 
-//close table
-$statisticsoutput .= "</table><br />\n";
+//close statsHeader
+$statisticsoutput .= "\t</div>\n";
 
 
 //push progress bar from 35 to 40
@@ -639,15 +685,8 @@ if (isset($summary) && $summary)
 	$prb->setLabelValue('txt1',$clang->gT('Generating summaries ...'));
 	$prb->moveStep($process_status);
 
-	//check if pchart should be used
-	if (isset($publicgraphs) && $publicgraphs == 1)  
-	{
-		//Delete any old temp image files
-		deletePattern($tempdir, "STATS_".date("d")."X".$currentuser."X".$surveyid."X"."*.png");
-	}
-
-	//let's run through the survey
-	$runthrough=$summary;
+	//let's run through the survey // Fixed bug 3053 with array_unique
+	$runthrough=array_unique($summary);
 	
 	//GET LIST OF LEGIT QIDs FOR TESTING LATER	
 	$lq = "SELECT DISTINCT qid FROM ".db_table_name("questions")." WHERE sid=$surveyid"; 
@@ -685,7 +724,9 @@ if (isset($summary) && $summary)
 			{
 				$qtitle=$nrow[0];
 				$qtype=$nrow[1];
-				$qquestion=strip_tags($nrow[2]);
+				// CHANGE JSW_NZ - allow html formatted questions to show
+				//$qquestion=FlattenText($nrow[2]);
+				$qquestion=$nrow[2];
 				$qlid=$nrow[3];
 				$qother=$nrow[4];
 			}
@@ -729,9 +770,9 @@ if (isset($summary) && $summary)
 			//loop through question data
 			while ($nrow=$nresult->FetchRow())
 			{
-				$qtitle=strip_tags($nrow[0]). " [".substr($rt, strpos($rt, "-")-($lengthofnumeral), $lengthofnumeral)."]";
+				$qtitle=FlattenText($nrow[0]). " [".substr($rt, strpos($rt, "-")-($lengthofnumeral), $lengthofnumeral)."]";
 				$qtype=$nrow[1];
-				$qquestion=strip_tags($nrow[2]). "[".$clang->gT("Ranking")." ".substr($rt, strpos($rt, "-")-($lengthofnumeral), $lengthofnumeral)."]";
+				$qquestion=FlattenText($nrow[2]). "[".$clang->gT("Ranking")." ".substr($rt, strpos($rt, "-")-($lengthofnumeral), $lengthofnumeral)."]";
 			}
 			
 			//get answers
@@ -794,9 +835,11 @@ if (isset($summary) && $summary)
 			//loop through results
 			while ($nrow=$nresult->FetchRow()) 
 			{				
-			    $qtitle=strip_tags($nrow[0]); //clean up title
+			    $qtitle=FlattenText($nrow[0]); //clean up title
 				$qtype=$nrow[1]; 
-				$qquestion=strip_tags($nrow[2]); //clean up question
+				// CHANGE JSW_NZ - allow html formatted questions to show
+				//$qquestion=FlattenText($nrow[2]);
+				$qquestion=$nrow[2];
 				$qiqid=$nrow[3]; 
 				$qlid=$nrow[4];
 			}
@@ -818,13 +861,16 @@ if (isset($summary) && $summary)
 			}
 			
 			//outputting headline
-			$statisticsoutput .= "\n<table align='center' width='95%' border='1'  cellpadding='2' cellspacing='0' >\n"
-			."\t<tr><td colspan='2' align='center'><strong>".$clang->gT("Field summary for")." $qtitle:</strong>"
+			$statisticsoutput .= "\n<table class='statisticstable'>\n"
+			."\t<tr><td colspan='2' align='center'><div class='fieldSummary'>"
+			//headline
+			.$clang->gT("Field summary for")." $qtitle:</div>"
 			."</td></tr>\n"
-			."\t<tr><td colspan='2' align='center'><strong>$qquestion</strong></td></tr>\n"
-			."\t<tr>\n\t\t<td width='50%' align='center' ><strong>"
+			."\t<tr><td colspan='2' align='center'><div class='questionTitle'>"
+			."$qquestion</div></td></tr>\n"
+			."\t<tr>\n<td width='50%' align='center' ><strong>"
 			.$clang->gT("Calculation")."</strong></td>\n"
-			."\t\t<td width='50%' align='center' ><strong>"
+			."<td width='50%' align='center' ><strong>"
 			.$clang->gT("Result")."</strong></td>\n"
 			."\t</tr>\n";
 			
@@ -832,7 +878,7 @@ if (isset($summary) && $summary)
 			$fieldname=substr($rt, 1, strlen($rt));
 			
 			//special treatment for MS SQL databases
-            if ($connect->databaseType == 'odbc_mssql')
+            if ($connect->databaseType == 'odbc_mssql' || $connect->databaseType == 'odbtp' || $connect->databaseType == 'mssql_n')
             { 
                 //standard deviation
                 $query = "SELECT STDEVP(".db_quote_id($fieldname)."*1) as stdev"; 
@@ -860,7 +906,7 @@ if (isset($summary) && $summary)
 			//Only select responses where there is an actual number response, ignore nulls and empties (if these are included, they are treated as zeroes, and distort the deviation/mean calculations)
                 
 			//special treatment for MS SQL databases
-			if ($connect->databaseType == 'odbc_mssql')
+			if ($connect->databaseType == 'odbc_mssql' || $connect->databaseType == 'odbtp' || $connect->databaseType == 'mssql_n')
                 { 
             	    //no NULL/empty values please
             	    $query .= " FROM ".db_table_name("survey_$surveyid")." WHERE ".db_quote_id($fieldname)." IS NOT NULL";
@@ -985,7 +1031,7 @@ if (isset($summary) && $summary)
 					
 					while ($row=$result->FetchRow()) 
 					{
-						$showem[]=array("1st Quartile (Q1)", $row[$fieldname]);
+						$showem[]=array($clang->gT("1st quartile (Q1)"), $row[$fieldname]);
 					}
 				}					
 				
@@ -1020,12 +1066,13 @@ if (isset($summary) && $summary)
 					
 					while ($row=$result->FetchRow()) 
 					{
-						$showem[]=array("Median Value", $row[$fieldname]);
+						$showem[]=array($clang->gT("Median value"), $row[$fieldname]);
 					}
 				}
 				
 				$total=0;				
 				
+					
 				//3RD QUARTILE (Q3)
 				$q3=(3/4)*($medcount+1);
 				$q3b=(int)((3/4)*($medcount+1));
@@ -1061,7 +1108,7 @@ if (isset($summary) && $summary)
 					
 					while ($row=$result->FetchRow()) 
 					{
-						$showem[]=array("3rd Quartile (Q3)", $row[$fieldname]);
+						$showem[]=array($clang->gT("3rd quartile (Q3)"), $row[$fieldname]);
 					}
 				}
 				
@@ -1073,19 +1120,19 @@ if (isset($summary) && $summary)
 				foreach ($showem as $shw)
 				{
 					$statisticsoutput .= "\t<tr>\n"
-					."\t\t<td align='center' >$shw[0]</td>\n"
-					."\t\t<td align='center' >$shw[1]</td>\n"
+					."<td align='center' >$shw[0]</td>\n"
+					."<td align='center' >$shw[1]</td>\n"
 					."\t</tr>\n";
 				}
 				
 				//footer of question type "N"
 				$statisticsoutput .= "\t<tr>\n"
-				."\t\t<td colspan='4' align='center' bgcolor='#EEEEEE'>\n"
-				."\t\t\t<font size='1'>".$clang->gT("Null values are ignored in calculations")."<br />\n"
-				."\t\t\t".sprintf($clang->gT("Q1 and Q3 calculated using %s"), "<a href='http://mathforum.org/library/drmath/view/60969.html' target='_blank'>".$clang->gT("minitab method")."</a>")
+				."<td colspan='4' align='center' bgcolor='#FFFFFF'>\n"
+				."\t<font size='1'>".$clang->gT("Null values are ignored in calculations")."<br />\n"
+				."\t".sprintf($clang->gT("Q1 and Q3 calculated using %s"), "<a href='http://mathforum.org/library/drmath/view/60969.html' target='_blank'>".$clang->gT("minitab method")."</a>")
 				."</font>\n"
-				."\t\t</td>\n"
-				."\t</tr>\n</table>\n";
+				."</td>\n"
+				."\t</tr>\n<tr style='height:30px; border-bottom: 0px solid #FFF'><td colspan='4'></td></tr></table>\n";
 				
 				//clean up
 				unset($showem);
@@ -1097,7 +1144,7 @@ if (isset($summary) && $summary)
 			{
 				//output
 				$statisticsoutput .= "\t<tr>\n"
-				."\t\t<td align='center'  colspan='4'>".$clang->gT("Not enough values for calculation")."</td>\n"
+				."<td align='center'  colspan='4'>".$clang->gT("Not enough values for calculation")."</td>\n"
 				."\t</tr>\n</table><br />\n";
 				unset($showem);
 			}
@@ -1137,9 +1184,11 @@ if (isset($summary) && $summary)
 			//loop though question data
 			while ($nrow=$nresult->FetchRow())
 			{
-				$qtitle=strip_tags($nrow[0]);
+				$qtitle=FlattenText($nrow[0]);
 				$qtype=$nrow[1];
-				$qquestion=strip_tags($nrow[2]);
+				// CHANGE JSW_NZ - let's allow html formatted questions to show
+				//$qquestion=FlattenText($nrow[2]);
+				$qquestion=$nrow[2];
 				$qiqid=$nrow[3];
 				$qlid=$nrow[4];
                 $qlid1=$nrow[5];
@@ -1237,28 +1286,28 @@ if (isset($summary) && $summary)
 
 				case ":": //Array (Multiple Flexi) (Numbers)
             	$qidattributes=getQuestionAttributes($qiqid);
-            	if ($maxvalue=arraySearchByKey("multiflexible_max", $qidattributes, "attribute", 1)) {
-            		$maxvalue=$maxvalue['value'];
+                if (trim($qidattributes['multiflexible_max'])!='') {
+            		$maxvalue=$qidattributes['multiflexible_max'];
             	} 
             	else {
             		$maxvalue=10;
             	}
 				
-            	if ($minvalue=arraySearchByKey("multiflexible_min", $qidattributes, "attribute", 1)) {
-            		$minvalue=$minvalue['value'];
+                if (trim($qidattributes['multiflexible_min'])!='') {
+            		$minvalue=$qidattributes['multiflexible_min'];
             	} 
             	else {
             		$minvalue=1;
             	}
             	
-            	if ($stepvalue=arraySearchByKey("multiflexible_step", $qidattributes, "attribute", 1)) {
-            		$stepvalue=$stepvalue['value'];
+                if (trim($qidattributes['multiflexible_step'])!='') {
+            		$stepvalue=$qidattributes['multiflexible_step'];
             	} 
             	else {
             		$stepvalue=1;
             	}
             	
-				if (arraySearchByKey("multiflexible_checkbox", $qidattributes, "attribute", 1)) {
+                if ($qidattributes['multiflexible_checkbox']!=0) {
 					$minvalue=0;
 					$maxvalue=1;
 					$stepvalue=1;
@@ -1308,7 +1357,7 @@ if (isset($summary) && $summary)
 					//add code and title to results for outputting them later
 					while ($frow=$fresult->FetchRow())
 					{
-						$alist[]=array($frow['code'], strip_tags($frow['title']));
+						$alist[]=array($frow['code'], FlattenText($frow['title']));
 					}
 					
 					//counter
@@ -1355,7 +1404,7 @@ if (isset($summary) && $summary)
 				//put label code and label title into array
 				while ($frow=$fresult->FetchRow())
 				{
-					$alist[]=array($frow['code'], strip_tags($frow['title']));
+					$alist[]=array($frow['code'], FlattenText($frow['title']));
 				}
 				
 				//does "other" field exist?
@@ -1379,10 +1428,9 @@ if (isset($summary) && $summary)
                     $fquery = "SELECT * FROM ".db_table_name("labels")." WHERE lid='{$qlid}' AND language='{$language}' ORDER BY sortorder, code";
                     
                     //header available?
-                    if ($dsheaderA=arraySearchByKey("dualscale_headerA", $qidattributes, "attribute", 1))
-                    {
+                    if (trim($qidattributes['dualscale_headerA'])!='') {
                     	//output
-                        $labelheader= "[".$dsheaderA['value']."]";
+                        $labelheader= "[".$qidattributes['dualscale_headerA']."]";
                     }
                     
                     //no header
@@ -1402,15 +1450,13 @@ if (isset($summary) && $summary)
                     $fquery = "SELECT * FROM ".db_table_name("labels")." WHERE lid='{$qlid1}' AND language='{$language}' ORDER BY sortorder, code";
                     
                     //header available?
-                    if ($dsheaderB=arraySearchByKey("dualscale_headerB", $qidattributes, "attribute", 1))
+                    if (trim($qidattributes['dualscale_headerB'])!='')
                     {
                     	//output
-                        $labelheader= "[" . $dsheaderB['value'] . "]";
+                        $labelheader= "[" . $qidattributes['dualscale_headerB'] . "]";
                     }
-
-                    //no header
                     else
-                    {
+                    { //no header
                         $labelheader ='';
                     }
                     
@@ -1424,7 +1470,7 @@ if (isset($summary) && $summary)
                 //put label code and label title into array
                 while ($frow=$fresult->FetchRow())
                 {
-                    $alist[]=array($frow['code'], strip_tags($frow['title']));
+                    $alist[]=array($frow['code'], FlattenText($frow['title']));
                 }
                 
                 //adapt title and question
@@ -1469,17 +1515,17 @@ if (isset($summary) && $summary)
 		if (isset($alist) && $alist) //Make sure there really is an answerlist, and if so:
 		{
 			//output
-			$statisticsoutput .= "<table width='95%' align='center' border='1'  cellpadding='2' cellspacing='0' class='statisticstable'>\n"
-			."\t<tr><td colspan='4' align='center'><strong>"
+			$statisticsoutput .= "<table class='statisticstable'>\n"
+			."\t<tr><td colspan='4' align='center'><div class='fieldSummary'>"
 			
 			//headline
-			.$clang->gT("Field summary for")." $qtitle:</strong>"
+			.$clang->gT("Field summary for")." $qtitle:</div>"
 			."</td></tr>\n"
-			."\t<tr><td colspan='4' align='center'><strong>"
+			."\t<tr><td colspan='4' align='center'><div class='questionTitle'>"
 			
 			//question title
-			."$qquestion</strong></td></tr>\n"
-			."\t<tr>\n\t\t<td width='50%' align='center' >";
+			."$qquestion</div></td></tr>\n"
+			."\t<tr>\n<td width='50%' align='center' >";
 			
 			// this will count the answers considered completed
 			$TotalCompleted = 0;    
@@ -1519,7 +1565,7 @@ if (isset($summary) && $summary)
 				else
 				{
 					//get more data                          
-                    if ($connect->databaseType == 'odbc_mssql')
+                    if ($connect->databaseType == 'odbc_mssql' || $connect->databaseType == 'odbtp' || $connect->databaseType == 'mssql_n')
                     { 
                         // mssql cannot compare text blobs so we have to cast here
                         $query = "SELECT count(*) FROM ".db_table_name("survey_$surveyid")." WHERE cast(".db_quote_id($rt)." as varchar)= '$al[0]'"; 
@@ -1557,11 +1603,11 @@ if (isset($summary) && $summary)
 							{
 								//four columns
 								$statisticsoutput .= "<strong>".$clang->gT("Answer")."</strong></td>\n"
-								."\t\t<td width='20%' align='center' >"
+								."<td width='20%' align='center' >"
 								."<strong>".$clang->gT("Count")."</strong></td>\n"
-								."\t\t<td width='20%' align='center' >"
+								."<td width='20%' align='center' >"
 								."<strong>".$clang->gT("Percentage")."</strong></td>\n"
-								."\t\t<td width='10%' align='center' >"
+								."<td width='10%' align='center' >"
 								."<strong>".$clang->gT("Sum")."</strong></td>\n"
 								."\t</tr>\n";
 								
@@ -1571,9 +1617,9 @@ if (isset($summary) && $summary)
 							{
 								//three columns
 								$statisticsoutput .= "<strong>".$clang->gT("Answer")."</strong></td>\n"
-								."\t\t<td width='25%' align='center' >"
+								."<td width='25%' align='center' >"
 								."<strong>".$clang->gT("Count")."</strong></td>\n"
-								."\t\t<td width='25%' align='center' >"
+								."<td width='25%' align='center' >"
 								."<strong>".$clang->gT("Percentage")."</strong></td>\n"
 								."\t</tr>\n";
 								
@@ -1644,9 +1690,9 @@ if (isset($summary) && $summary)
 						{						
 							//three columns
 							$statisticsoutput .= "<strong>".$clang->gT("Answer")."</strong></td>\n"
-							."\t\t<td width='25%' align='center' >"
+							."<td width='25%' align='center' >"
 							."<strong>".$clang->gT("Count")."</strong></td>\n"
-							."\t\t<td width='25%' align='center' >"
+							."<td width='25%' align='center' >"
 							."<strong>".$clang->gT("Percentage")."</strong></td>\n"
 							."\t</tr>\n";
 						
@@ -1688,7 +1734,8 @@ if (isset($summary) && $summary)
 					$justcode[]=$al[0];
 					
 					//edit labels and put them into antoher array
-                    $lbl[] = wordwrap(strip_tags($fname), 25, "\n");
+                    $lbl[] = wordwrap(FlattenText("$al[1] ($row[0])"), 25, "\n"); // NMO 2009-03-24
+                    $lblrtl[] = utf8_strrev(wordwrap(FlattenText("$al[1] )$row[0]("), 25, "\n")); // NMO 2009-03-24
                     
                 }	//end while -> loop through results
                 
@@ -1752,7 +1799,7 @@ if (isset($summary) && $summary)
 	                $justcode[]=$fname;
 	                
 	                //edit labels and put them into antoher array
-	                $lbl[] = wordwrap(strip_tags($fname), 20, "\n");
+	                $lbl[] = wordwrap(FlattenText($fname), 20, "\n");
 	                
 	            }	//end else -> noncompleted NOT checked
 	            
@@ -1782,18 +1829,18 @@ if (isset($summary) && $summary)
             	 * 2 (25%) = count (absolute)
             	 * 3 (25%) = percentage
             	 */
-                $statisticsoutput .= "\t<tr>\n\t\t<td width='50%' align='center' >" . $label[$i] ."\n"
-                ."\t\t</td>\n"
+                $statisticsoutput .= "\t<tr>\n<td width='50%' align='center' >" . $label[$i] ."\n"
+                ."</td>\n"
                 
                 //output absolute number of records
-                ."\t\t<td width='20%' align='center' >" . $grawdata[$i] . "\n";
+                ."<td width='20%' align='center' >" . $grawdata[$i] . "\n";
                 
                 
                 //no data
                 if ($gdata[$i] == "N/A") 
                 {
                 	//output when having no data
-                	$statisticsoutput .= "\t\t</td><td width='20%' align='center' >";
+                	$statisticsoutput .= "</td><td width='20%' align='center' >";
                 	
                 	//percentage = 0
                     $statisticsoutput .= sprintf("%01.2f", $gdata[$i]) . "%"; 
@@ -1802,13 +1849,13 @@ if (isset($summary) && $summary)
                     //check if we have to adjust ouput due to $showaggregateddata setting
                     if($showaggregateddata == 1 && isset($showaggregateddata) && ($qtype == "5" || $qtype == "A"))
                     {
-                    	$statisticsoutput .= "\t\t</td><td>";
+                    	$statisticsoutput .= "</td><td>";
                 	}
                 }
                 
                 //data available
                 else
-                {        	
+                {               	
                 	//check if data should be aggregated
                 	if($showaggregateddata == 1 && isset($showaggregateddata) && ($qtype == "5" || $qtype == "A"))
                 	{
@@ -1862,13 +1909,13 @@ if (isset($summary) && $summary)
 	                		}
 	                		
 	                		//output
-	                		$statisticsoutput .= "\t\t</td><td width='20%' align='center'>";
+	                		$statisticsoutput .= "</td><td width='20%' align='center'>";
 	                		
 	                		//output percentage
 	                		$statisticsoutput .= sprintf("%01.2f", $percentage) . "%"; 
 	                		
 	                		//adjust output
-	                		$statisticsoutput .= "\t\t</td><td>";	                		
+	                		$statisticsoutput .= "</td><td>";	                		
 	                	}
 	                	
 	                	//item 3 - just show results twice
@@ -1897,13 +1944,13 @@ if (isset($summary) && $summary)
 	                		}
 	                		
 	                		//output percentage
-	                		$statisticsoutput .= "\t\t</td><td width='20%' align='center' >";
+	                		$statisticsoutput .= "</td><td width='20%' align='center' >";
 	                		$statisticsoutput .= sprintf("%01.2f", $percentage) . "%"; 
 							
 							//output again (no real aggregation here)
-	                		$statisticsoutput .= "\t\t</td><td width='10%' align='center' >";
+	                		$statisticsoutput .= "</td><td width='10%' align='center' >";
 	                		$statisticsoutput .= sprintf("%01.2f", $percentage)."%";
-	                		$statisticsoutput .= "\t\t";
+	                		$statisticsoutput .= "";
 	                	}
 	                	
 	                	//FIRST value -> add percentage of item 1 + item 2
@@ -1938,13 +1985,13 @@ if (isset($summary) && $summary)
 	                		$aggregatedgdata = $percentage + $percentage2;
 	                		
 	                		//output percentage
-	                		$statisticsoutput .= "\t\t</td><td width='20%' align='center' >";
+	                		$statisticsoutput .= "</td><td width='20%' align='center' >";
 	                		$statisticsoutput .= sprintf("%01.2f", $percentage) . "%"; 
 							
 	                		//output aggregated data
-	                		$statisticsoutput .= "\t\t</td><td width='10%' align='center' >";
+	                		$statisticsoutput .= "</td><td width='10%' align='center' >";
 	                		$statisticsoutput .= sprintf("%01.2f", $aggregatedgdata)."%";
-	                		$statisticsoutput .= "\t\t";
+	                		$statisticsoutput .= "";
 	                	}
 	                	
 	                	//LAST value -> add item 4 + item 5
@@ -1978,13 +2025,13 @@ if (isset($summary) && $summary)
 	                		$aggregatedgdata = $percentage + $percentage2;
 	                		
 	                		//output percentage
-	                		$statisticsoutput .= "\t\t</td><td width='20%' align='center' >";
+	                		$statisticsoutput .= "</td><td width='20%' align='center' >";
 	                		$statisticsoutput .= sprintf("%01.2f", $percentage) . "%";
 							
 	                		//output aggregated data
-	                		$statisticsoutput .= "\t\t</td><td width='10%' align='center' >";
+	                		$statisticsoutput .= "</td><td width='10%' align='center' >";
 	                		$statisticsoutput .= sprintf("%01.2f", $aggregatedgdata)."%";
-	                		$statisticsoutput .= "\t\t";
+	                		$statisticsoutput .= "";
 	                		
 	                		//calculate sum of items 1-5
 	                		$sumitems = $grawdata[$i] 
@@ -2012,18 +2059,18 @@ if (isset($summary) && $summary)
 	                			$casepercentage = "0";
 	                		}
 	                		
-	                		$statisticsoutput .= "\t\t&nbsp</td>\n\t</tr>\n";
-	                		$statisticsoutput .= "<tr><td width='50%' align='center'><strong>".$clang->gT("Sum")." (".$clang->gT("Answers").")</strong></td>";
+	                		$statisticsoutput .= "&nbsp;</td>\n\t</tr>\n";
+	                		$statisticsoutput .= "<tfoot><tr><td width='50%' align='center'><strong>".$clang->gT("Sum")." (".$clang->gT("Answers").")</strong></td>";
 	                		$statisticsoutput .= "<td width='20%' align='center' ><strong>".$sumitems."</strong></td>";
 	                		$statisticsoutput .= "<td width='20%' align='center' ><strong>$sumpercentage%</strong></td>";
 	                		$statisticsoutput .= "<td width='10%' align='center' ><strong>$sumpercentage%</strong></td>";
 	                		
-	                		$statisticsoutput .= "\t\t&nbsp</td>\n\t</tr>\n";
+	                		$statisticsoutput .= "&nbsp;</td>\n\t</tr>\n";
 	                		$statisticsoutput .= "<tr><td width='50%' align='center'>".$clang->gT("Number of cases")."</td>";	//German: "Fallzahl"
 	                		$statisticsoutput .= "<td width='20%' align='center' >".$TotalCompleted."</td>";
 	                		$statisticsoutput .= "<td width='20%' align='center' >$casepercentage%</td>";
 	                		//there has to be a whitespace within the table cell to display correctly
-	                		$statisticsoutput .= "<td width='10%' align='center' >&nbsp</td></tr>";  
+	                		$statisticsoutput .= "<td width='10%' align='center' >&nbsp;</td></tr></tfoot>";  
 	                		
 	                	}
 	                	
@@ -2033,15 +2080,15 @@ if (isset($summary) && $summary)
                 	else
                 	{                		
                 		//output percentage 
-	                	$statisticsoutput .= "\t\t</td><td width='20%' align='center' >";
+	                	$statisticsoutput .= "</td><td width='20%' align='center' >";
                 		$statisticsoutput .= sprintf("%01.2f", $gdata[$i]) . "%";
-                		$statisticsoutput .= "\t\t";
+                		$statisticsoutput .= "";
                 	}
                 	                	                	
                 }	//end else -> $gdata[$i] != "N/A"                    
                 
               	//end output per line. there has to be a whitespace within the table cell to display correctly
-	            $statisticsoutput .= "\t\t&nbsp</td>\n\t</tr>\n";              
+	            $statisticsoutput .= "&nbsp;</td>\n\t</tr>\n";              
                 
                 //increase counter
                 $i++;
@@ -2064,14 +2111,16 @@ if (isset($summary) && $summary)
             		//calculate arithmetic mean
             		if(isset($sumitems) && $sumitems > 0)
             		{
+            			
+            			
             			//calculate and round results
             			//there are always 5 items
             			for($x = 0; $x < 5; $x++)
             			{
             				//create product of item * value
             				$am += (($x+1) * $stddevarray[$x]);
-            			}
-
+            }
+            			
             			//prevent division by zero
             			if(isset($stddevarray) && array_sum($stddevarray) > 0)
             			{
@@ -2134,7 +2183,7 @@ if (isset($summary) && $summary)
 			        $statisticsoutput .= "<tr><td width='50%' align='center'>".$clang->gT("Arithmetic mean")." | ".$clang->gT("Standard deviation")."</td>";	//German: "Fallzahl"
 			        $statisticsoutput .= "<td width='40%' align='center' colspan = '2'> $am | $stddev</td>";
 			        //there has to be a whitespace within the table cell to display correctly
-			        $statisticsoutput .= "<td width='10%' align='center' >&nbsp</td></tr>";
+			        $statisticsoutput .= "<td width='10%' align='center' >&nbsp;</td></tr>";
             	}
             }
             
@@ -2171,7 +2220,6 @@ if (isset($summary) && $summary)
                     if ($data != 0){$i++;}
                 }	
 				$totallines=$i;
-				
 				if ($totallines>15) 
 				{
 					$gheight=320+(6.7*($totallines-15));
@@ -2203,8 +2251,7 @@ if (isset($summary) && $summary)
                         $counter++;
                         if ($datapoint>$maxyvalue) $maxyvalue=$datapoint;
                     }
-//                    $DataSet->AddPoint($justcode,"LabelX");
-//                    $DataSet->SetAbsciseLabelSerie("LabelX");
+
                     if ($maxyvalue<10) {++$maxyvalue;}
                     $counter=0;
                     foreach ($lbl as $label)
@@ -2213,34 +2260,41 @@ if (isset($summary) && $summary)
                         $counter++;
                     }
                     
-                    //$DataSet->SetAbsciseLabelSerie();  
+                    if ($MyCache->IsInCache("graph".$surveyid,$DataSet->GetData()))
+                    {
+                        $cachefilename=basename($MyCache->GetFileFromCache("graph".$surveyid,$DataSet->GetData())); 
+                    }  
+                    else
+                    { 
+                        $graph = new pChart(1,1); 
+                        
+                        $graph->setFontProperties($rootdir."/fonts/".$chartfontfile, $chartfontsize);
+                        $legendsize=$graph->getLegendBoxSize($DataSet->GetDataDescription());
+                         
+                        if ($legendsize[1]<320) $gheight=420; else $gheight=$legendsize[1]+100;
+                        $graph = new pChart(690+$legendsize[0],$gheight); 
+                        $graph->loadColorPalette($homedir.'/styles/'.$admintheme.'/limesurvey.pal');
+                        $graph->setFontProperties($rootdir."/fonts/".$chartfontfile,$chartfontsize);  
+                        $graph->setGraphArea(50,30,500,$gheight-60);  
+                        $graph->drawFilledRoundedRectangle(7,7,523+$legendsize[0],$gheight-7,5,254,255,254);  
+                        $graph->drawRoundedRectangle(5,5,525+$legendsize[0],$gheight-5,5,230,230,230);  
+                        $graph->drawGraphArea(255,255,255,TRUE);  
+                        $graph->drawScale($DataSet->GetData(),$DataSet->GetDataDescription(),SCALE_START0,150,150,150,TRUE,90,0,TRUE,5,false);  
+                        $graph->drawGrid(4,TRUE,230,230,230,50);     
+                                          // Draw the 0 line
+                        $graph->setFontProperties($rootdir."/fonts/".$chartfontfile,$chartfontsize);
+                        $graph->drawTreshold(0,143,55,72,TRUE,TRUE);
 
-                    $Test = new pChart(1,1); 
-                    
-                    $Test->setFontProperties("classes/pchart/fonts/tahoma.ttf",10);
-                    $legendsize=$Test->getLegendBoxSize($DataSet->GetDataDescription());
-                     
-                    if ($legendsize[1]<320) $gheight=420; else $gheight=$legendsize[1]+100;
-                    $Test = new pChart(690+$legendsize[0],$gheight); 
-                    $Test->loadColorPalette($homedir.'/styles/'.$admintheme.'/limesurvey.pal');
-                    $Test->setFontProperties("classes/pchart/fonts/tahoma.ttf",8);  
-                    $Test->setGraphArea(50,30,500,$gheight-60);  
-                    $Test->drawFilledRoundedRectangle(7,7,523+$legendsize[0],$gheight-7,5,240,240,240);  
-                    $Test->drawRoundedRectangle(5,5,525+$legendsize[0],$gheight-5,5,230,230,230);  
-                    $Test->drawGraphArea(255,255,255,TRUE);  
-                    $Test->drawScale($DataSet->GetData(),$DataSet->GetDataDescription(),SCALE_START0,150,150,150,TRUE,90,0,TRUE,5,false);  
-                    $Test->drawGrid(4,TRUE,230,230,230,50);     
-                                      // Draw the 0 line
-                    $Test->setFontProperties("classes/pchart/fonts/tahoma.ttf",6);
-                    $Test->drawTreshold(0,143,55,72,TRUE,TRUE);
+                        // Draw the bar graph
+                        $graph->drawBarGraph($DataSet->GetData(),$DataSet->GetDataDescription(),FALSE);
+                        //$Test->setLabel($DataSet->GetData(),$DataSet->GetDataDescription(),"Serie4","1","Important point!");   
+                        // Finish the graph
+                        $graph->setFontProperties($rootdir."/fonts/".$chartfontfile, $chartfontsize);
+                        $graph->drawLegend(510,30,$DataSet->GetDataDescription(),255,255,255);
 
-                    // Draw the bar graph
-                    $Test->drawBarGraph($DataSet->GetData(),$DataSet->GetDataDescription(),FALSE);
-                    //$Test->setLabel($DataSet->GetData(),$DataSet->GetDataDescription(),"Serie4","1","Important point!");   
-                    // Finish the graph
-                    $Test->setFontProperties("classes/pchart/fonts/tahoma.ttf",10);
-                    $Test->drawLegend(510,30,$DataSet->GetDataDescription(),255,255,255);
-                    // $Test->drawTitle(50,22,"Example ".$legendsize[0].'x'.$legendsize[1],50,50,50,585);
+                        $MyCache->WriteToCache("graph".$surveyid,$DataSet->GetData(),$graph);
+                        $cachefilename=basename($MyCache->GetFileFromCache("graph".$surveyid,$DataSet->GetData())); 
+                    }
 				}	//end if (bar chart)
 				
 				//Pie Chart
@@ -2259,23 +2313,45 @@ if (isset($summary) && $summary)
                         {$i++;}
                     }
                 
+                    $lblout=array();
+                    if (getLanguageRTL($language))
+                    {
+                        $lblout=$lblrtl;     
+                    }
+                    else
+                    {
+                        $lblout=$lbl;  
+                    }
+                    
+                     
                     //create new 3D pie chart
 					$DataSet = new pData; 
                     $DataSet->AddPoint($gdata,"Serie1");  
-                    $DataSet->AddPoint($lbl,"Serie2");  
+                    $DataSet->AddPoint($lblout,"Serie2");  
                     $DataSet->AddAllSeries();
                     $DataSet->SetAbsciseLabelSerie("Serie2");
 					
+                    if ($MyCache->IsInCache("graph".$surveyid,$DataSet->GetData()))
+                    {
+                        $cachefilename=basename($MyCache->GetFileFromCache("graph".$surveyid,$DataSet->GetData())); 
+                    }  
+                    else
+                    { 
 					
-                    $Test = new pChart(690,$gheight);  
-					$Test->drawFilledRoundedRectangle(7,7,687,$gheight-3,5,240,240,240);  
-                    $Test->drawRoundedRectangle(5,5,689,$gheight-1,5,230,230,230);  
-					
-                    // Draw the pie chart  
-                    $Test->setFontProperties("classes/pchart/fonts/tahoma.ttf",10);  
-                    $Test->drawPieGraph($DataSet->GetData(),$DataSet->GetDataDescription(),225,round($gheight/2),170,PIE_PERCENTAGE,TRUE,50,20,5);  
-                    $Test->setFontProperties("classes/pchart/fonts/tahoma.ttf",9);  
-                    $Test->drawPieLegend(430,15,$DataSet->GetData(),$DataSet->GetDataDescription(),250,250,250);  
+                        $gheight=ceil($gheight);
+                        $graph = new pChart(690,$gheight);  
+                        $graph->loadColorPalette($homedir.'/styles/'.$admintheme.'/limesurvey.pal');
+					    $graph->drawFilledRoundedRectangle(7,7,687,$gheight-3,5,254,255,254);  
+                        $graph->drawRoundedRectangle(5,5,689,$gheight-1,5,230,230,230);  
+					    
+                        // Draw the pie chart  
+                        $graph->setFontProperties($rootdir."/fonts/".$chartfontfile, $chartfontsize);  
+                        $graph->drawPieGraph($DataSet->GetData(),$DataSet->GetDataDescription(),225,round($gheight/2),170,PIE_PERCENTAGE,TRUE,50,20,5);  
+                        $graph->setFontProperties($rootdir."/fonts/".$chartfontfile,$chartfontsize);  
+                        $graph->drawPieLegend(430,12,$DataSet->GetData(),$DataSet->GetDataDescription(),250,250,250);  
+                        $MyCache->WriteToCache("graph".$surveyid,$DataSet->GetData(),$graph);
+                        $cachefilename=basename($MyCache->GetFileFromCache("graph".$surveyid,$DataSet->GetData()));                         
+                    }
 					
 				}	//end else -> pie charts
 
@@ -2285,14 +2361,10 @@ if (isset($summary) && $summary)
 				//increase counter, start value -> 1
 				$ci++;
 				
-				//filename of chart image
-				$gfilename="STATS_".date("d")."X".$currentuser."X".$surveyid."X".$ci.date("His").".png";
-				
-				//create graph
-				$Test->Render($tempdir."/".$gfilename);
-				
 				//add graph to output
-				$statisticsoutput .= "<tr><td colspan='4' style=\"text-align:center\"><img src=\"$tempurl/".$gfilename."\" border='0'></td></tr>";
+				$statisticsoutput .= "<tr>\n"
+				. "\t<td colspan='4' style=\"text-align:center\"><img src=\"$tempurl/".$cachefilename."\" border='1' alt=\"\" /></td>\n"
+				. "</tr>\n";
 			}
 			
 			//close table/output
@@ -2305,13 +2377,15 @@ if (isset($summary) && $summary)
 		unset($grawdata);
         unset($label);
 		unset($lbl);
+        unset($lblout);
 		unset($justcode);
 		unset ($alist);		
 		
 	}	// end foreach -> loop through all questions
 	
 	//output
-    $statisticsoutput .= "<br />&nbsp\n";
+    $statisticsoutput .= "<br />\n"
+	. "</div>\n";
     
 }	//end if -> show summary results
 
@@ -2328,63 +2402,13 @@ if (isset($prb))
 //output everything:
 echo $statisticsoutput;
 
+
+//output footer
+echo getFooter();
+
+
 //Delete all Session Data
 $_SESSION['finished'] = true;
-
-
-
-//delete old images
-function deletePattern($dir, $pattern = "")
-{
-	$deleted = false;
-	$pattern = str_replace(array("\*","\?"), array(".*","."), preg_quote($pattern));
-	if (substr($dir,-1) != "/") $dir.= "/";
-	if (is_dir($dir))
-	{
-		$d = opendir($dir);
-		while ($file = readdir($d))
-		{
-			if (is_file($dir.$file) && ereg("^".$pattern."$", $file))
-			{
-				if (unlink($dir.$file))
-				{
-					$deleted[] = $file;
-				}
-			}
-		}
-		closedir($d);
-		return $deleted;
-	}
-	else return 0;
-}
-
-
-//delete old images (which aren't from today?)
-function deleteNotPattern($dir, $matchpattern, $pattern = "")
-{
-	$deleted = false;
-	$pattern = str_replace(array("\*","\?"), array(".*","."), preg_quote($pattern));
-	$matchpattern = str_replace(array("\*","\?"), array(".*","."), preg_quote($matchpattern));
-	if (substr($dir,-1) != "/") $dir.= "/";
-	if (is_dir($dir))
-	{
-		$d = opendir($dir);
-		while ($file = readdir($d))
-		{
-			if (is_file($dir.$file) && ereg("^".$matchpattern."$", $file) && !ereg("^".$pattern."$", $file))
-			{
-				if (unlink($dir.$file))
-				{
-					$deleted[] = $file;
-				}
-			}
-		}
-		closedir($d);
-		return $deleted;
-	}
-	else return 0;
-}
-
 
 
 //simple function to square a value

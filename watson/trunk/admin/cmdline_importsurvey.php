@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: cmdline_importsurvey.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: cmdline_importsurvey.php 7699 2009-09-30 22:28:50Z c_schmitz $
 */
 
 
@@ -61,7 +61,7 @@ if ($result->RecordCount() < 1)
 else
 	{
 	$fields = $result->FetchRow();
-	if (SHA256::hash($userpass) == $fields['password'])
+	if (SHA256::hashing($userpass) == $fields['password'])
 		{
 			$_SESSION['loginID'] = intval($fields['uid']);
 			$clang = new limesurvey_lang($fields['lang']);

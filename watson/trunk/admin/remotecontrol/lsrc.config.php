@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: lsrc.config.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: lsrc.config.php 8093 2009-12-07 13:24:23Z mennodekker $
 * 
 */
 
@@ -19,13 +19,12 @@
 // only include if this config is not used to save a survey.csv for the lsrc
 if(!isset($export4lsrc))
 {
-	include("../../config-defaults.php");
-	include("../../config.php");
+	include_once("../../config-defaults.php");
 	require_once(dirname(__FILE__).'/../../common.php');
 }
 ### Error Handling
 // simple debug Option
-error_reporting(E_ALL);
+ini_set("error_reporting","E_ALL");
 
 //specialized debug option, true for own debuglog
 $lsrcDebug = true;
@@ -45,18 +44,18 @@ ini_set("soap.wsdl_cache_enabled", "0");
 ### Security
 // enable for ssl connections 
 // this is for wsdl generation, on true the url to the server in the wsdl beginns with https instead of http
-$lsrcOverSSL=true; //default: false
+$lsrcOverSSL=false; //default: false
 
 // enable if you use a certificate for the Connections
 // IMPORTANT NOTE: your Client need the same certificate to connect with.
 $useCert=false; //default: false
 // path to your local certificate
-$sslCert='cacert.pem';
-
+$sslCert='D:\\xampp\apache\privkey.pem';
+//C:\\path\myCert.pem
 
 ### Variables
 // path to the wsdl definition for this server... normally it is in the same directory, so you don't need to change it. 
-$wsdl= $homedir."/remotecontrol/lsrc.wsdl"; //default: $homedir."/lsrc/lsrc.wsdl";
+$wsdl= $homedir."/remotecontrol/lsrc.wsdl"; //default: $homedir."/remotecontrol/lsrc.wsdl";
 
 /**
  * These are the Dirs where the prepared survey csv's are or have to be. 

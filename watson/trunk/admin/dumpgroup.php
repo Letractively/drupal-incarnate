@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: dumpgroup.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: dumpgroup.php 8223 2010-01-05 09:54:08Z c_schmitz $
 */
 
 
@@ -54,12 +54,6 @@ $dumphead = "# LimeSurvey Group Dump\n"
         . "# Do not change this header!\n";
 
 
-header("Content-Type: application/download");
-header("Content-Disposition: attachment; filename=$fn");
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");    // Date in the past
-header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");  // always modified
-header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-header("Pragma: cache");
 
 //0: Groups Table
 $gquery = "SELECT * 
@@ -143,13 +137,36 @@ if(count($ld1)>3) {
 
 
 //8: Question Attributes
-$query = "SELECT DISTINCT {$dbprefix}question_attributes.* 
+$query = "SELECT {$dbprefix}question_attributes.* 
 	   	  FROM {$dbprefix}question_attributes, {$dbprefix}questions 
 		  WHERE ({$dbprefix}question_attributes.qid={$dbprefix}questions.qid) 
 		  AND ({$dbprefix}questions.gid=$gid)";
 $qadump = BuildCSVFromQuery($query);
 
+if($action=='exportstructureLsrcCsvGroup')
+{
+	include_once($homedir.'/remotecontrol/lsrc.config.php');
+	$lsrcString = $dumphead. $gdump. $qdump. $adump. $cdump. $lsdump. $ls1dump. $ldump. $l1dump. $qadump;
+	//Select title as Filename and save
+	$groupTitleSql = "SELECT group_name 
+		             FROM {$dbprefix}groups 
+					 WHERE sid=$surveyid AND gid=$gid ";
+	$groupTitleRs = db_execute_assoc($groupTitleSql);   
+	$groupTitle = $groupTitleRs->FetchRow();
+	file_put_contents("remotecontrol/".$modDir.substr($groupTitle['group_name'],0,20).".csv",$lsrcString);
+}
+else
+{
 // HTTP/1.0
+	header("Content-Type: application/download");
+	header("Content-Disposition: attachment; filename=$fn");
+	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");    // Date in the past
+	header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");  // always modified
+	header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+	header("Pragma: cache");
+	
 echo $dumphead, $gdump, $qdump, $adump, $cdump, $lsdump, $ls1dump, $ldump, $l1dump, $qadump;
 exit;
+}
+
 ?>

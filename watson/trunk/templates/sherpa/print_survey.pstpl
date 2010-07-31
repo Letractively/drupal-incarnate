@@ -5,27 +5,22 @@
 {HEADELEMENTS}
 
 		<link rel="stylesheet" type="text/css" href="{TEMPLATEURL}print_template.css" />
-<!--[if IE]>
-		<link rel="stylesheet" type="text/css" href="{TEMPLATEURL}print_IE_fix_all-versions.css" />
-<![endif]-->
-<!--[if lt IE 7]>
-		<link rel="stylesheet" type="text/css" href="{TEMPLATEURL}print_IE_fix_older-than-7.css" />
-<![endif]-->
 	</head>
 	<body>
 		<div id="limesurvey">
 			<h1>{SURVEYNAME}</h1>
 	
-			<div class="survey-welcome">{WELCOME}</div>
-
 			<div class="survey-description">{SURVEYDESCRIPTION}</div>
+			
+			<div class="survey-welcome">{WELCOME}</div>
 
 			<p class="x-questions">{THEREAREXQUESTIONS}</p>
 {GROUPS}
 {PRIVACY}
 			<p class="submit-by">
-				{SUBMIT_BY}<br />
-				{FAX_TO}
+				{END}<br />
+                {SUBMIT_BY}<br />
+				{FAX_TO}<br />
 				{SUBMIT_TEXT}<br />
 				{THANKS}<br />
 			</p>

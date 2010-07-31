@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: importsurvey.php 6639 2009-04-14 22:45:09Z c_schmitz $
+* $Id: importsurvey.php 8450 2010-03-02 21:41:25Z c_schmitz $
 */
 
 //Ensure script is not run directly, avoid path disclosure
@@ -20,13 +20,13 @@ if (!isset($importingfrom) || isset($_REQUEST['importingfrom'])) {die("Cannot ru
 $handle = fopen($the_full_file_path, "r");
 while (!feof($handle))
 {
-    //To allow for very long survey lines (up to 64k)  
-	$buffer = fgets($handle, 56550);
+ 
+	$buffer = fgets($handle);
 	$bigarray[] = $buffer;
 }
 fclose($handle);
 
-
+if (isset($bigarray[0])) $bigarray[0]=removeBOM($bigarray[0]);
 // Now we try to determine the dataformat of the survey file.
  
 if (isset($bigarray[1]) && isset($bigarray[4])&& (substr($bigarray[1], 0, 22) == "# SURVEYOR SURVEY DUMP")&& (substr($bigarray[4], 0, 29) == "# http://www.phpsurveyor.org/"))
@@ -47,10 +47,10 @@ else    // unknown file - show error message
   {
   	if ($importingfrom == "http")
   	{
-	    $importsurvey .= "<strong><font color='red'>".$clang->gT("Error")."</font></strong><br />\n";
+	    $importsurvey .= "<div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
 	  	$importsurvey .= $clang->gT("This file is not a LimeSurvey survey file. Import failed.")."<br /><br />\n";
-	  	$importsurvey .= "</font></td></tr></table>\n";
-	  	$importsurvey .= "</body>\n</html>\n";
+		$importsurvey .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+	  	$importsurvey .= "</div>\n";
 	  	unlink($the_full_file_path);
 	  	return;
 	  }
@@ -319,11 +319,37 @@ for ($i=0; $i<=$stoppoint+1; $i++)
 }
 $bigarray = array_values($bigarray);
 
-//Survey Language Settings
+//QUOTA MEMBERS
+if (array_search("# QUOTA_LANGUAGESETTINGS TABLE\n", $bigarray))
+{
+	$stoppoint = array_search("# QUOTA_LANGUAGESETTINGS TABLE\n", $bigarray);
+}
+elseif (array_search("# QUOTA_LANGUAGESETTINGS TABLE\r\n", $bigarray))
+{
+	$stoppoint = array_search("# QUOTA_LANGUAGESETTINGS TABLE\r\n", $bigarray);
+}
+else
+{
+	$stoppoint = count($bigarray)-1;
+}
+for ($i=0; $i<=$stoppoint+1; $i++)
+{
+//	if ($i<$stoppoint-2 || $i==count($bigarray)-1)
+	if ($i<$stoppoint-2)
+	{
+		$quotamembersarray[] = $bigarray[$i];
+	}
+	unset($bigarray[$i]);
+}
+$bigarray = array_values($bigarray);
+
+
+//Whatever is the last table - currently 
+//QUOTA LANGUAGE SETTINGS
 $stoppoint = count($bigarray)-1;
 for ($i=0; $i<$stoppoint-1; $i++)
 {
-	if ($i<=$stoppoint) {$quotamembersarray[] = $bigarray[$i];}
+	if ($i<=$stoppoint) {$quotalsarray[] = $bigarray[$i];}
 	unset($bigarray[$i]);
 }
 $bigarray = array_values($bigarray);
@@ -338,6 +364,8 @@ if (isset($labelsetsarray)) {$countlabelsets = count($labelsetsarray);} else {$c
 if (isset($question_attributesarray)) {$countquestion_attributes = count($question_attributesarray);} else {$countquestion_attributes=0;}
 if (isset($assessmentsarray)) {$countassessments=count($assessmentsarray);} else {$countassessments=0;}
 if (isset($quotaarray)) {$countquota=count($quotaarray);} else {$countquota=0;}
+if (isset($quotamembersarray)) {$countquotamembers=count($quotamembersarray);} else {$countquotamembers=0;}
+if (isset($quotalsarray)) {$countquotals=count($quotalsarray);} else {$countquotals=0;}
 
 // CREATE SURVEY
 
@@ -368,11 +396,11 @@ if (!$surveyid)
 {
 	if ($importingfrom == "http")
 	{
-		$importsurvey .= "<br /><strong><font color='red'>".$clang->gT("Error")."</strong></font><br />\n";
+		$importsurvey .= "<br /><div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
 		$importsurvey .= $clang->gT("Import of this survey file failed")."<br />\n";
-		$importsurvey .= $clang->gT("File does not contain LimeSurvey data in the correct format.")."<br />\n"; //Couldn't find the SID - cannot continue
-		$importsurvey .= "</font></td></tr></table>\n";
-		$importsurvey .= "</body>\n</html>\n";
+		$importsurvey .= $clang->gT("File does not contain LimeSurvey data in the correct format.")."<br /><br />\n"; //Couldn't find the SID - cannot continue
+		$importsurvey .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+		$importsurvey .= "</div>\n";
 		unlink($the_full_file_path); //Delete the uploaded file
 		return;
 	}
@@ -400,7 +428,7 @@ if (!$surveyid)
 		while ($isresult->RecordCount()>0);
 	}
 
-
+$importwarning = "";	// used to save the warnings while processing questions
 $insert=$surveyarray[0];
 if ($importversion>=111)
 {
@@ -419,6 +447,7 @@ $surveyrowdata['owner_id']=$_SESSION['loginID'];
 $surveyrowdata['sid']=$newsid;
 $surveyrowdata['active']='N';
 
+if (validate_templatedir($surveyrowdata['template'])!==$surveyrowdata['template']) $importwarning .= "<li>". sprintf($clang->gT('Template %s not found, please review when activating.'),$surveyrowdata['template']) ."</li>";
 
 if ($importversion<=100)
 // find the old language field and replace its contents with the new language shortcuts
@@ -507,14 +536,15 @@ if ($importversion<=100)
     $surveylsrowdata['surveyls_description']=$surveyrowdata['description'];
     $surveylsrowdata['surveyls_welcometext']=$surveyrowdata['welcome'];
     $surveylsrowdata['surveyls_urldescription']=$surveyrowdata['urldescrip'];
-    $surveylsrowdata['surveyls_email_invite_subj']=$surveyrowdata['email_invite_subj'];
+    if (isset($surveyrowdata['email_invite_subj'])) $surveylsrowdata['surveyls_email_invite_subj']=$surveyrowdata['email_invite_subj'];
     $surveylsrowdata['surveyls_email_invite']=$surveyrowdata['email_invite'];
-    $surveylsrowdata['surveyls_email_remind_subj']=$surveyrowdata['email_remind_subj'];
+    if (isset($surveyrowdata['email_remind_subj']))     $surveylsrowdata['surveyls_email_remind_subj']=$surveyrowdata['email_remind_subj'];
     $surveylsrowdata['surveyls_email_remind']=$surveyrowdata['email_remind'];
-    $surveylsrowdata['surveyls_email_register_subj']=$surveyrowdata['email_register_subj'];
+    if (isset($surveyrowdata['email_register_subj']))     $surveylsrowdata['surveyls_email_register_subj']=$surveyrowdata['email_register_subj'];
     $surveylsrowdata['surveyls_email_register']=$surveyrowdata['email_register'];
-    $surveylsrowdata['surveyls_email_confirm_subj']=$surveyrowdata['email_confirm_subj'];
+    if (isset($surveyrowdata['email_confirm_subj'])) $surveylsrowdata['surveyls_email_confirm_subj']=$surveyrowdata['email_confirm_subj'];
     $surveylsrowdata['surveyls_email_confirm']=$surveyrowdata['email_confirm'];
+	if(!isset($defaultsurveylanguage)) {$defaultsurveylanguage=$newlanguage;}
     unset($surveyrowdata['short_title']);
     unset($surveyrowdata['description']);
     unset($surveyrowdata['welcome']);
@@ -552,7 +582,12 @@ if ($importversion<=100)
 
 if (isset($surveyrowdata['datecreated'])) {$surveyrowdata['datecreated']=$connect->BindTimeStamp($surveyrowdata['datecreated']);}
 unset($surveyrowdata['expires']);
+unset($surveyrowdata['attribute1']);
+unset($surveyrowdata['attribute2']);
+unset($surveyrowdata['usestartdate']);
+unset($surveyrowdata['useexpiry']);
 unset($surveyrowdata['url']);           
+unset($surveyrowdata['lastpage']);           
 if (isset($surveyrowdata['startdate'])) {unset($surveyrowdata['startdate']);}
 $surveyrowdata['bounce_email']=$surveyrowdata['adminemail'];
 if (!isset($surveyrowdata['datecreated']) || $surveyrowdata['datecreated']=='' || $surveyrowdata['datecreated']=='null') {$surveyrowdata['datecreated']=$connect->BindTimeStamp(date_shift(date("Y-m-d H:i:s"), "Y-m-d", $timeadjust));}
@@ -585,6 +620,7 @@ if ($importversion>=111)
     $surveylsrowdata['surveyls_email_remind']=translink('survey', $surveyid, $newsid, $surveylsrowdata['surveyls_email_remind']);
     $surveylsrowdata['surveyls_email_register']=translink('survey', $surveyid, $newsid, $surveylsrowdata['surveyls_email_register']);
     $surveylsrowdata['surveyls_email_confirm']=translink('survey', $surveyid, $newsid, $surveylsrowdata['surveyls_email_confirm']);
+    unset($surveylsrowdata['lastpage']);           
 
         $surveylsrowdata['surveyls_survey_id']=$newsid;     
         $newvalues=array_values($surveylsrowdata);
@@ -685,7 +721,7 @@ if (isset($labelsetsarray) && $labelsetsarray) {
 		//CHECK FOR DUPLICATE LABELSETS
 		$thisset="";
         
-        $query2 = "SELECT code, title, sortorder, language
+        $query2 = "SELECT code, title, sortorder, language, assessment_value
                    FROM {$dbprefix}labels
                    WHERE lid=".$newlid."
                    ORDER BY language, sortorder, code";
@@ -727,7 +763,6 @@ if (isset($labelsetsarray) && $labelsetsarray) {
 	}
 }
 
-$importwarning = "";	// used to save the warnings while processing questions
 $qtypes = getqtypelist("" ,"array");
 
 // DO GROUPS, QUESTIONS FOR GROUPS, THEN ANSWERS FOR QUESTIONS IN A NESTED FORMAT!
@@ -956,6 +991,10 @@ if (isset($grouparray) && $grouparray) {
 									"newcfieldname"=>$newsid."X".$newgid."X".$newqid,
 									"oldfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code,
 									"newfieldname"=>$newsid."X".$newgid."X".$newqid.$code);
+									$fieldnames[]=array("oldcfieldname"=>'+'.$oldsid."X".$oldgid."X".$oldqid.$code,
+									"newcfieldname"=>'+'.$newsid."X".$newgid."X".$newqid.$code,
+									"oldfieldname"=>"+".$oldsid."X".$oldgid."X".$oldqid.$code,
+									"newfieldname"=>"+".$newsid."X".$newgid."X".$newqid.$code);
 									if ($type == "P") {
 										$fieldnames[]=array("oldcfieldname"=>$oldsid."X".$oldgid."X".$oldqid."comment",
 										"newcfieldname"=>$newsid."X".$newgid."X".$newqid.$code."comment",
@@ -963,11 +1002,24 @@ if (isset($grouparray) && $grouparray) {
 										"newfieldname"=>$newsid."X".$newgid."X".$newqid.$code."comment");
 									}
 								}
-								elseif ($type == "A" || $type == "B" || $type == "C" || $type == "F" || $type == "H" || $type == "E" || $type == "Q" || $type == "K" || $type == "1") {
+								elseif ($type == "A" || $type == "B" || $type == "C" || $type == "F" || $type == "H" || $type == "E" || $type == "Q" || $type == "K") {
 									$fieldnames[]=array("oldcfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code,
 									"newcfieldname"=>$newsid."X".$newgid."X".$newqid.$code,
 									"oldfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code,
 									"newfieldname"=>$newsid."X".$newgid."X".$newqid.$code);
+								}
+								elseif ($type == "1") {
+									$fieldnames[]=array(
+									"oldcfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code."#0",
+									"newcfieldname"=>$newsid."X".$newgid."X".$newqid.$code."#0",
+									"oldfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code."#0",
+									"newfieldname"=>$newsid."X".$newgid."X".$newqid.$code."#0");
+
+									$fieldnames[]=array(
+									"oldcfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code."#1",
+									"newcfieldname"=>$newsid."X".$newgid."X".$newqid.$code."#1",
+									"oldfieldname"=>$oldsid."X".$oldgid."X".$oldqid.$code."#1",
+									"newfieldname"=>$newsid."X".$newgid."X".$newqid.$code."#1");
 								}
 								elseif ($type == ":" || $type == ";" ) {
 									// read all label codes from $questionrowdata["lid"]
@@ -1039,7 +1091,7 @@ if (isset($grouparray) && $grouparray) {
    $gres = db_execute_assoc($gquery);
    while ($grow = $gres->FetchRow()) 
         {
-        fixsortorderQuestions(0,$grow['gid']);
+        fixsortorderQuestions($grow['gid'], $surveyid);
         }
 
         //We've built two arrays along the way - one containing the old SID, GID and QIDs - and their NEW equivalents
@@ -1075,7 +1127,7 @@ if (isset($question_attributesarray) && $question_attributesarray) {//ONLY DO TH
 	}
 }
 
-if (isset($assessmentsarray) && $assessmentsarray) {//ONLY DO THIS IF THERE ARE QUESTION_ATTRIBUES
+if (isset($assessmentsarray) && $assessmentsarray) {//ONLY DO THIS IF THERE ARE QUESTION_ATTRIBUTES
     $count=0; 
 	foreach ($assessmentsarray as $qar) {
         if ($importversion>=111)
@@ -1097,10 +1149,17 @@ if (isset($assessmentsarray) && $assessmentsarray) {//ONLY DO THIS IF THERE ARE 
         }
 		$oldsid=$asrowdata["sid"];
 		$oldgid=$asrowdata["gid"];
-		foreach ($substitutions as $subs) {
-			if ($oldsid==$subs[0]) {$newsid=$subs[3];}
-			if ($oldgid==$subs[1]) {$newgid=$subs[4];}
-		}
+        if  ($oldgid>0)
+        {
+            foreach ($substitutions as $subs) {
+                if ($oldsid==$subs[0]) {$newsid=$subs[3];}
+                if ($oldgid==$subs[1]) {$newgid=$subs[4];}
+            }
+        }
+        else
+        {
+            $newgid=0;
+        }
 
 		$asrowdata["sid"]=$newsid;
 		$asrowdata["gid"]=$newgid;
@@ -1134,6 +1193,7 @@ if (isset($quotaarray) && $quotaarray) {//ONLY DO THIS IF THERE ARE QUOTAS
 		$asrowdata["sid"]=$newsid;
 		$oldid = $asrowdata["id"];
 		unset($asrowdata["id"]);
+		$quotadata[]=$asrowdata; //For use later if needed
 
         $newvalues=array_values($asrowdata);
         $newvalues=array_map(array(&$connect, "qstr"),$newvalues); // quote everything accordingly
@@ -1145,7 +1205,7 @@ if (isset($quotaarray) && $quotaarray) {//ONLY DO THIS IF THERE ARE QUOTAS
 	}
 }
 
-if (isset($quotamembersarray) && $quotamembersarray) {//ONLY DO THIS IF THERE ARE QUOTAS
+if (isset($quotamembersarray) && $quotamembersarray) {//ONLY DO THIS IF THERE ARE QUOTA MEMBERS
     $count=0;
 	foreach ($quotamembersarray as $qar) {
         
@@ -1184,6 +1244,56 @@ if (isset($quotamembersarray) && $quotamembersarray) {//ONLY DO THIS IF THERE AR
 	}
 }
 
+if (isset($quotalsarray) && $quotalsarray) {//ONLY DO THIS IF THERE ARE QUOTA LANGUAGE SETTINGS
+    $count=0;
+	foreach ($quotalsarray as $qar) {
+        
+        $fieldorders  =convertCSVRowToArray($quotalsarray[0],',','"');
+        $fieldcontents=convertCSVRowToArray($qar,',','"');
+        if ($count==0) {$count++; continue;}
+	
+        $asrowdata=array_combine($fieldorders,$fieldcontents);
+
+		$newquotaid="";
+		$oldquotaid=$asrowdata['quotals_quota_id'];
+
+		foreach ($quotaids as $quotaid) {
+			if ($oldquotaid==$quotaid[0]) {$newquotaid=$quotaid[1];}
+		}
+		
+		$asrowdata["quotals_quota_id"]=$newquotaid;
+		unset($asrowdata["quotals_id"]);
+
+        $newvalues=array_values($asrowdata);
+        $newvalues=array_map(array(&$connect, "qstr"),$newvalues); // quote everything accordingly
+
+        $asinsert = "INSERT INTO {$dbprefix}quota_languagesettings (".implode(',',array_keys($asrowdata)).") VALUES (".implode(',',$newvalues).")"; 
+		$result=$connect->Execute($asinsert) or safe_die ("Couldn't insert quota<br />$asinsert<br />".$connect->ErrorMsg());
+	}
+}
+
+//if there are quotas, but no quotals, then we need to create default dummy for each quota (this handles exports from pre-language quota surveys)
+if ($countquota > 0 && (!isset($countquotals) || $countquotals == 0)) {
+	$i=0;
+	$defaultsurveylanguage=isset($defaultsurveylanguage) ? $defaultsurveylanguage : "en";
+	foreach($quotaids as $quotaid) {
+	    $newquotaid=$quotaid[1];
+		$asrowdata=array("quotals_quota_id" => $newquotaid,
+						 "quotals_language" => $defaultsurveylanguage,
+						 "quotals_name" => $quotadata[$i]["name"],
+						 "quotals_message" => $clang->gT("Sorry your responses have exceeded a quota on this survey."),
+						 "quotals_url" => "",
+						 "quotals_urldescrip" => "");
+		$i++;
+	}
+	$newvalues = array_values($asrowdata);
+	$newvalues = array_map(array(&$connect, "qstr"),$newvalues);
+	
+    $asinsert = "INSERT INTO {$dbprefix}quota_languagesettings (".implode(',',array_keys($asrowdata)).") VALUES (".implode(',',$newvalues).")"; 
+	$result=$connect->Execute($asinsert) or safe_die ("Couldn't insert quota<br />$asinsert<br />".$connect->ErrorMsg());
+	$countquotals=$i;
+}
+
 if (isset($conditionsarray) && $conditionsarray) {//ONLY DO THIS IF THERE ARE CONDITIONS!
     $count='0';  
 	foreach ($conditionsarray as $car) {
@@ -1206,12 +1316,16 @@ if (isset($conditionsarray) && $conditionsarray) {//ONLY DO THIS IF THERE ARE CO
 		$oldcqid=$conditionrowdata["cqid"];
 		$thisvalue=$conditionrowdata["value"];
 		$newvalue=$thisvalue;
+		$newcfieldname=$oldcfieldname;
 		
 		foreach ($substitutions as $subs) {
 			if ($oldqid==$subs[2])  {$newqid=$subs[5];}
 			if ($oldcqid==$subs[2]) {$newcqid=$subs[5];}
 		}
-		if (ereg('^@([0-9]+)X([0-9]+)X([^@]+)@',$thisvalue,$targetcfieldname))
+        // Exception for conditions based on attributes
+        if ($oldcqid==0) {$newcqid=0;}
+        
+		if (preg_match('/^@([0-9]+)X([0-9]+)X([^@]+)@/',$thisvalue,$targetcfieldname))
 		{
 			foreach ($substitutions as $subs) {
 				if ($targetcfieldname[1]==$subs[0])  {$targetcfieldname[1]=$subs[3];}
@@ -1237,6 +1351,7 @@ if (isset($conditionsarray) && $conditionsarray) {//ONLY DO THIS IF THERE ARE CO
 		$conditionrowdata["qid"]=$newqid;
 		$conditionrowdata["cfieldname"]=$newcfieldname;
 		$conditionrowdata["value"]=$newvalue;
+
 		
 		if (isset($newcqid)) {
 			$conditionrowdata["cqid"]=$newcqid;
@@ -1271,14 +1386,14 @@ if (isset($fieldnames))
 
 if ($importingfrom == "http")
 {
-	$importsurvey .= "<br />\n<strong><font class='successtitle'>".$clang->gT("Success")."</font></strong><br /><br />\n";
+	$importsurvey .= "<br />\n<div class='successheader'>".$clang->gT("Success")."</div><br /><br />\n";
 	$importsurvey .= "<strong><u>".$clang->gT("Survey Import Summary")."</u></strong><br />\n";
 	$importsurvey .= "<ul style=\"text-align:left;\">\n\t<li>".$clang->gT("Surveys").": $countsurveys</li>\n";
 	if ($importversion>=111)
 	    {
 	    $importsurvey .= "\t<li>".$clang->gT("Languages").": $countlanguages</li>\n";
 	    }
-	$importsurvey .= "\t<li>".$clang->gT("Groups").": $countgroups</li>\n";
+	$importsurvey .= "\t<li>".$clang->gT("Question groups").": $countgroups</li>\n";
 	$importsurvey .= "\t<li>".$clang->gT("Questions").": $countquestions</li>\n";
 	$importsurvey .= "\t<li>".$clang->gT("Answers").": $countanswers</li>\n";
 	$importsurvey .= "\t<li>".$clang->gT("Conditions").": $countconditions</li>\n";
@@ -1289,12 +1404,12 @@ if ($importingfrom == "http")
     }
 	$importsurvey .= "\t<li>".$clang->gT("Question Attributes").": $countquestion_attributes</li>\n";
 	$importsurvey .= "\t<li>".$clang->gT("Assessments").": $countassessments</li>\n";
-	$importsurvey .= "\t<li>".$clang->gT("Quotas").": $countquota</li>\n</ul>\n";
+	$importsurvey .= "\t<li>".$clang->gT("Quotas").": $countquota ($countquotamembers ".$clang->gT("quota members")." ".$clang->gT("and")." $countquotals ".$clang->gT("quota language settings").")</li>\n</ul><br />\n";
+    if ($importwarning != "") $importsurvey .= "<div class='warningheader'>".$clang->gT("Warnings").":</div><ul style=\"text-align:left;\">" . $importwarning . "</ul><br />\n";
 	
 	$importsurvey .= "<strong>".$clang->gT("Import of Survey is completed.")."</strong><br />\n"
 			. "<a href='$scriptname?sid=$newsid'>".$clang->gT("Go to survey")."</a><br />\n";
-	if ($importwarning != "") $importsurvey .= "<br><strong>".$clang->gT("Warnings").":</strong><br><ul style=\"text-align:left;\">" . $importwarning . "</ul><br>\n";
-	$importsurvey .= "</td></tr></table><br /></table>\n";
+	$importsurvey .= "</div><br />\n";
 	unlink($the_full_file_path);
 	unset ($surveyid);  // Crazy but necessary because else the html script will search for user rights
 }
@@ -1314,7 +1429,7 @@ else
 	echo $clang->gT("Label Sets").": $countlabelsets\n";
     if ($deniedcountlabelsets>0) echo $clang->gT("Not imported Label Sets").": $deniedcountlabelsets (".$clang->gT("(Label Sets were not imported since you do not have the permission to create new label sets.)");
 	echo $clang->gT("Question Attributes").": $countquestion_attributes\n";
-	echo $clang->gT("Assessments").": $countassessments\n\n";
+	echo $clang->gT("Assessments").": $countassessments\n\n";	
 	
 	echo $clang->gT("Import of Survey is completed.")."\n";
 	if ($importwarning != "") echo "\n".$clang->gT("Warnings").":\n" . $importwarning . "\n";
@@ -1322,4 +1437,3 @@ else
 
 }
 
-?>

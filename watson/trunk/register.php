@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: register.php 5747 2008-10-07 19:40:33Z c_schmitz $
+* $Id: register.php 8488 2010-03-15 21:35:23Z c_schmitz $
 */
 
 // Security Checked: POST, GET, SESSION, REQUEST, returnglobal, DB 
@@ -19,7 +19,6 @@ require_once(dirname(__FILE__).'/classes/core/startup.php');    // Since this fi
 require_once(dirname(__FILE__).'/config-defaults.php');
 require_once(dirname(__FILE__).'/common.php');
 require_once($rootdir.'/classes/core/language.php');
-require_once(dirname(__FILE__).'/classes/core/html_entity_decode_php4.php');
 
 $surveyid=returnglobal('sid');
 $postlang=returnglobal('lang');
@@ -31,6 +30,22 @@ if (!isset($surveyid))
 	include "index.php";
 	exit;
 }
+
+
+$usquery = "SELECT stg_value FROM ".db_table_name("settings_global")." where stg_name='SessionName'";
+$usresult = db_execute_assoc($usquery,'',true);          //Checked 
+if ($usresult)
+{
+    $usrow = $usresult->FetchRow();
+    $stg_SessionName=$usrow['stg_value'];
+    @session_name($stg_SessionName.'-runtime-'.$surveyid);
+}
+else
+{
+    session_name("LimeSurveyRuntime-$surveyid");
+}
+
+session_set_cookie_params(0,$relativeurl);
 session_start();
 
 // Get passed language from form, so that we dont loose this!
@@ -54,7 +69,7 @@ if (function_exists("ImageCreate") && captcha_enabled('registrationscreen',$this
 		!isset($_SESSION['secanswer']) ||
 		$_POST['loadsecurity'] != $_SESSION['secanswer'])
     {
-	    $register_errormsg .= $clang->gT("The answer to the security question is incorrect")."<br />\n";
+	    $register_errormsg .= $clang->gT("The answer to the security question is incorrect.")."<br />\n";
     }
 }
 
@@ -92,20 +107,19 @@ while ($mayinsert != true)
 
 $postfirstname=sanitize_xss_string(strip_tags(returnglobal('register_firstname')));   
 $postlastname=sanitize_xss_string(strip_tags(returnglobal('register_lastname')));   
-$postattribute1=sanitize_xss_string(strip_tags(returnglobal('register_attribute1')));   
-$postattribute2=sanitize_xss_string(strip_tags(returnglobal('register_attribute2')));   
+/*$postattribute1=sanitize_xss_string(strip_tags(returnglobal('register_attribute1')));   
+$postattribute2=sanitize_xss_string(strip_tags(returnglobal('register_attribute2')));   */
 
 //Insert new entry into tokens db
 $query = "INSERT INTO {$dbprefix}tokens_$surveyid\n"
-. "(firstname, lastname, email, emailstatus, token, attribute_1, attribute_2)\n"
-. "VALUES (?, ?, ?, ?, ?, ?, ?)";
+. "(firstname, lastname, email, emailstatus, token)\n"
+. "VALUES (?, ?, ?, ?, ?)";
 $result = $connect->Execute($query, array($postfirstname, 
                                           $postlastname,
                                           returnglobal('register_email'), 
                                           'OK', 
-                                          $newtoken,
-                                          $postattribute1, 
-                                          $postattribute2)
+                                          $newtoken)
+                                          //                             $postattribute1,   $postattribute2)
 ) or safe_die ($query."<br />".$connect->ErrorMsg());  //Checked - According to adodb docs the bound variables are quoted automatically
 $tid=$connect->Insert_ID("{$dbprefix}tokens_$surveyid","tid");
 
@@ -116,8 +130,6 @@ $fieldsarray["{SURVEYNAME}"]=$thissurvey['name'];
 $fieldsarray["{SURVEYDESCRIPTION}"]=$thissurvey['description'];
 $fieldsarray["{FIRSTNAME}"]=$postfirstname;
 $fieldsarray["{LASTNAME}"]=$postlastname;
-$fieldsarray["{ATTRIBUTE_1}"]=$postattribute1;
-$fieldsarray["{ATTRIBUTE_2}"]=$postattribute2;
 $fieldsarray["{EXPIRY}"]=$thissurvey["expiry"];
 $fieldsarray["{EXPIRY-DMY}"]=date("d-m-Y",strtotime($thissurvey["expiry"]));
 $fieldsarray["{EXPIRY-MDY}"]=date("m-d-Y",strtotime($thissurvey["expiry"]));
@@ -144,7 +156,7 @@ $subject=Replacefields($subject, $fieldsarray);
 
 $html=""; //Set variable
 
-if (MailTextMessage($message, $subject, returnglobal('register_email'), $from, $sitename,$useHtmlEmail,getBounceEmail($surveyid)))
+if (SendEmailMessage($message, $subject, returnglobal('register_email'), $from, $sitename,$useHtmlEmail,getBounceEmail($surveyid)))
 {
 	// TLR change to put date into sent
 	//	$query = "UPDATE {$dbprefix}tokens_$surveyid\n"
@@ -155,7 +167,7 @@ if (MailTextMessage($message, $subject, returnglobal('register_email'), $from, $
 	$result=$connect->Execute($query) or safe_die ("$query<br />".$connect->ErrorMsg());     //Checked
 	$html="<center>".$clang->gT("Thank you for registering to participate in this survey.")."<br /><br />\n".$clang->gT("An email has been sent to the address you provided with access details for this survey. Please follow the link in that email to proceed.")."<br /><br />\n".$clang->gT("Survey Administrator")." {ADMINNAME} ({ADMINEMAIL})";
 	$html=Replacefields($html, $fieldsarray);
-	$html .= "<br /><br />\n<input type='submit' onclick='javascript: self.close()' value='".$clang->gT("Close this Window")."'></center>\n";
+	$html .= "<br /><br /></center>\n";
 }
 else
 {
@@ -163,44 +175,25 @@ else
 }
 
 //PRINT COMPLETED PAGE
-if (!$publicdir) {$publicdir=".";}
-if (!$thissurvey['template']) {$thistpl="$publicdir/templates/default";} else {$thistpl="$publicdir/templates/{$thissurvey['template']}";}
-if (!is_dir($thistpl)) {$thistpl="$publicdir/templates/default";}
+if (!$thissurvey['template']) {$thistpl="$templaterootdir/default";} else {$thistpl="$templaterootdir/{$thissurvey['template']}";}
+if (!is_dir($thistpl)) {$thistpl="$templaterootdir/default";}
 
 sendcacheheaders();
 doHeader();
 
 foreach(file("$thistpl/startpage.pstpl") as $op)
 {
-	echo templatereplace1($op);
+	echo templatereplace($op);
 }
 foreach(file("$thistpl/survey.pstpl") as $op)
 {
-	echo "\t".templatereplace1($op);
+	echo "\t".templatereplace($op);
 }
 echo $html;
 foreach(file("$thistpl/endpage.pstpl") as $op)
 {
-	echo templatereplace1($op);
+	echo templatereplace($op);
 }
 doFooter();
 
-function templatereplace1($line)
-{
-	global $thissurvey, $surveyid;
-	global $publicurl, $templatedir, $token;
-
-	if ($thissurvey['template']) {$templateurl="$publicurl/templates/{$thissurvey['template']}/";}
-	else {$templateurl="$publicurl/templates/default/";}
-
-	$line=str_replace("{SURVEYNAME}", $thissurvey['name'], $line);
-	$line=str_replace("{SURVEYDESCRIPTION}", $thissurvey['description'], $line);
-	$line=str_replace("{TOKEN}", $token, $line);
-	$line=str_replace("{SID}", $surveyid, $line);
-	$line=str_replace("{TEMPLATEURL}", $templateurl, $line);
-	$line=str_replace("{PERCENTCOMPLETE}", "", $line);
-	$line=str_replace("{LANGUAGECHANGER}", "", $line);
-	return $line;
-}
-
-?>
+// Closing PHP tag is intentially left out (yes, it's fine!)

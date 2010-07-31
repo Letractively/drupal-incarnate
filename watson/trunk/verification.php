@@ -10,14 +10,39 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: verification.php 4945 2008-05-29 17:01:48Z c_schmitz $
+* $Id: verification.php 8488 2010-03-15 21:35:23Z c_schmitz $
 */
 
 // Security Checked: POST, GET, SESSION, REQUEST, returnglobal, DB
 
 // make sure you include this file only if the ImageCreate function does exist since it is an optional library
 // Lets get into the session
-session_start();
+
+require_once(dirname(__FILE__).'/config-defaults.php');
+require_once(dirname(__FILE__).'/common.php');
+
+if (isset($_GET['sid'])) $surveyid=(int)$_GET['sid']; else die();
+$usquery = "SELECT stg_value FROM ".db_table_name("settings_global")." where stg_name='SessionName'";
+$usresult = db_execute_assoc($usquery,'',true);          //Checked 
+if ($usresult)
+{
+    $usrow = $usresult->FetchRow();
+    $stg_SessionName=$usrow['stg_value'];
+    if ($surveyid)
+    {
+        @session_name($stg_SessionName.'-runtime-'.$surveyid);
+    }
+    else
+    {
+        @session_name($stg_SessionName.'-runtime-publicportal');
+    }
+}
+else
+{
+    session_name("LimeSurveyRuntime-$surveyid");
+}
+session_set_cookie_params(0,$relativeurl);
+@session_start();
 
 // header for png
 Header("Content-Type: image/png");
@@ -59,12 +84,12 @@ if ($font_c_rand == 1)
 $font_rand = rand(1,3);
 if ($font_rand == 1)
 {
-	$font = "fonts/verabd.ttf";
+	$font = $rootdir."/fonts/verabd.ttf";
 } else if ($font_rand == 2) {
-	$font = "fonts/vera.ttf";
+	$font = $rootdir."/fonts/vera.ttf";
 } else if ($font_rand == 3)
 {
-	$font = "fonts/verait.ttf";
+	$font = $rootdir."/fonts/verait.ttf";
 }
 
 $line_rand = rand(1,3);

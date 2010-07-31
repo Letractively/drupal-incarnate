@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: save.php 6594 2009-04-01 21:33:36Z lemeur $
+* $Id: save.php 8474 2010-03-10 20:27:45Z c_schmitz $
 
 //Security Checked: POST, GET, SESSION, REQUEST, returnglobal, DB
 
@@ -58,6 +58,7 @@ if (!isset($homedir) || isset($_REQUEST['$homedir'])) {die("Cannot run this scri
 
 
 global $connect;
+
 //First, save the posted data to session
 //Doing this ensures that answers on the current page are saved as well.
 //CONVERT POSTED ANSWERS TO SESSION VARIABLES
@@ -83,6 +84,11 @@ if (isset($_POST['fieldnames']) && $_POST['fieldnames'])
 		if (!isset($_POST[$pf])) {$_SESSION[$pf] = "";}
 	}
 }                  
+//CHECK FOR TIMER QUESTIONS TO SAVE TIME REMAINING
+if (isset($_POST['timerquestion'])) 
+{
+	$_SESSION[$_POST['timerquestion']]=sanitize_float($_POST[$_POST['timerquestion']]);
+}
 
 //Check to see if we should set a submitdate or not
 // this depends on the move, and on quesitons checks
@@ -124,7 +130,7 @@ if (isset($postedfieldnames))
 				}
 				if ($bFinalizeThisAnswer === true)
 				{
-					$connect->Execute("DELETE FROM ".db_table_name("saved_control")." where srid=".$_SESSION['srid']);   // Checked    
+					$connect->Execute("DELETE FROM ".db_table_name("saved_control")." where srid=".$_SESSION['srid'].' and sid='.$surveyid);   // Checked    
 				}
 			} 
             else 
@@ -133,6 +139,31 @@ if (isset($postedfieldnames))
                 }
 		}
 	}
+    elseif (isset($move) && $move!='moveprev')
+    {
+        // This else block is only there to take care of date conversion if the survey is not active - otherwise this is done in creatInsertQuery
+        $fieldmap=createFieldMap($surveyid); //Creates a list of the legitimate questions for this survey
+        $inserts=array_unique($_SESSION['insertarray']);            
+        foreach ($inserts as $value)
+        {
+            //Work out if the field actually exists in this survey
+            $fieldexists = arraySearchByKey($value, $fieldmap, "fieldname", 1);
+            //Iterate through possible responses
+            if (isset($_SESSION[$value]) && !empty($fieldexists) && $_SESSION[$value]!='')
+            {
+
+                    if ($fieldexists['type']=='D')  // convert the date to the right DB Format
+                    {
+                        $dateformatdatat=getDateFormatData($thissurvey['surveyls_dateformat']);
+                        $datetimeobj = new Date_Time_Converter($_SESSION[$value], $dateformatdatat['phpdate']);
+                        $_SESSION[$value]=$datetimeobj->convert("Y-m-d");     
+                        $_SESSION[$value]=$connect->BindDate($_SESSION[$value]);
+                    }
+            }
+        }
+
+        
+    }
 }
 
 // CREATE SAVED CONTROL RECORD USING SAVE FORM INFORMATION
@@ -140,12 +171,11 @@ if (isset($_POST['saveprompt']))  //Value submitted when clicking on 'Save Now' 
 {
 	if ($thissurvey['active'] == "Y") 	// Only save if active
 	{
-		$saveresult=savedcontrol();
+		$flashmessage=savedcontrol();
 		if (isset($errormsg) && $errormsg != "")
 		{
 			showsaveform();
 		}
-        echo  $saveresult;
 	}
 	else
 	{
@@ -162,7 +192,7 @@ if ($thissurvey['allowsave'] == "Y"  && isset($_POST['saveall']) && !isset($_SES
 }
 elseif ($thissurvey['allowsave'] == "Y"  && isset($_POST['saveall']) && isset($_SESSION['scid']) )   //update the saved step only
 {
-    $connect->Execute("update ".db_table_name("saved_control")." set saved_thisstep={$thisstep} where scid=".$_SESSION['scid']);  // Checked    
+    $connect->Execute("update ".db_table_name("saved_control")." set saved_thisstep=".db_quoteall($thisstep)." where scid=".$_SESSION['scid']);  // Checked    
 }
 
 
@@ -172,7 +202,7 @@ function showsaveform()
 	//Show 'SAVE FORM' only when click the 'Save so far' button the first time, or when duplicate is found on SAVE FORM.
 	global $thistpl, $errormsg, $thissurvey, $surveyid, $clang, $clienttoken, $relativeurl, $thisstep;
 	sendcacheheaders();
-	echo "<html>\n";
+    doHeader();   
 	foreach(file("$thistpl/startpage.pstpl") as $op)
 	{
 		echo templatereplace($op);
@@ -180,9 +210,9 @@ function showsaveform()
 	echo "\n\n<!-- JAVASCRIPT FOR CONDITIONAL QUESTIONS -->\n"
 	."\t<script type='text/javascript'>\n"
 	."\t<!--\n"
-	."\t\tfunction checkconditions(value, name, type)\n"
-	."\t\t\t{\n"
-	."\t\t\t}\n"
+	."function checkconditions(value, name, type)\n"
+	."\t{\n"
+	."\t}\n"
 	."\t//-->\n"
 	."\t</script>\n\n";
 
@@ -197,10 +227,10 @@ function showsaveform()
 		echo templatereplace($op);
 	}
 	//END
-	echo "<input type='hidden' name='sid' value='$surveyid'>\n";
-	echo "<input type='hidden' name='thisstep' value='",$thisstep,"'>\n";
-	echo "<input type='hidden' name='token' value='",$clienttoken,"'>\n";
-	echo "<input type='hidden' name='saveprompt' value='Y'>\n";
+	echo "<input type='hidden' name='sid' value='$surveyid' />\n";
+	echo "<input type='hidden' name='thisstep' value='",$thisstep,"' />\n";
+	echo "<input type='hidden' name='token' value='",$clienttoken,"' />\n";
+	echo "<input type='hidden' name='saveprompt' value='Y' />\n";
 	echo "</form>";
 
 	foreach(file("$thistpl/endpage.pstpl") as $op)
@@ -243,7 +273,7 @@ function savedcontrol()
 		!isset($_SESSION['secanswer']) ||
 		$_POST['loadsecurity'] != $_SESSION['secanswer'])
 	    {
-		    $errormsg .= $clang->gT("The answer to the security question is incorrect")."<br />\n";
+		    $errormsg .= $clang->gT("The answer to the security question is incorrect.")."<br />\n";
 	    }
     }
 
@@ -270,7 +300,7 @@ function savedcontrol()
             $today = date_shift(date("Y-m-d H:i:s"), "Y-m-d H:i:s", $timeadjust);     
 			$sdata = array("datestamp"=>$today,
 			"ipaddr"=>$_SERVER['REMOTE_ADDR'],
-			"startlanguage"=>GetBaseLanguageFromSurveyID($surveyid),
+			"startlanguage"=>$_SESSION['s_lang'],
 			"refurl"=>getenv("HTTP_REFERER"));
 			//One of the strengths of ADOdb's AutoExecute() is that only valid field names for $table are updated
 			if ($connect->AutoExecute($thissurvey['tablename'], $sdata,'INSERT'))    // Checked    
@@ -325,7 +355,7 @@ function savedcontrol()
 
 				if ($clienttoken){$message.="&token=".$clienttoken;}
 				$from="{$thissurvey['adminname']} <{$thissurvey['adminemail']}>";
-				if (MailTextMessage($message, $subject, $_POST['saveemail'], $from, $sitename, false, getBounceEmail($surveyid)))
+				if (SendEmailMessage($message, $subject, $_POST['saveemail'], $from, $sitename, false, getBounceEmail($surveyid)))
 				{
 					$emailsent="Y";
 				}
@@ -343,11 +373,11 @@ function savedcontrol()
 function createinsertquery()
 {
 
-	global $thissurvey, $timeadjust, $move;
+	global $thissurvey, $timeadjust, $move, $thisstep;
 	global $deletenonvalues, $thistpl;
 	global $surveyid, $connect, $clang, $postedfieldnames,$bFinalizeThisAnswer;
 
-    require_once("./classes/inputfilter/class.inputfilter_clean.php");
+    require_once("classes/inputfilter/class.inputfilter_clean.php");
     $myFilter = new InputFilter('','',1,1,1);
 
 	$fieldmap=createFieldMap($surveyid); //Creates a list of the legitimate questions for this survey
@@ -364,25 +394,40 @@ function createinsertquery()
             //Iterate through possible responses
             if (isset($_SESSION[$value]) && !empty($fieldexists))
             {
-                //If deletenonvalues is ON, delete any values that shouldn't exist
+				//If deletenonvalues is ON, delete any values that shouldn't exist
                 if($deletenonvalues==1)
-		{
-			if (!checkconfield($value))
-			{
-				$colnames_hidden[]=$value;
-			}
-		}
+				{
+					if (!checkconfield($value))
+					{
+						$colnames_hidden[]=$value;
+					}
+				}
                 //Only create column name and data entry if there is actually data! 
                 $colnames[]=$value;
                 // most databases do not allow to insert an empty value into a datefield, 
                 // therefore if no date was chosen in a date question the insert value has to be NULL
-                if (($_SESSION[$value]=='' && $fieldexists['type']=='D')||($_SESSION[$value]=='' && $fieldexists['type']=='K')||($_SESSION[$value]=='' && $fieldexists['type']=='N'))      
+		if ($deletenonvalues==1 && !checkconfield($value))
+		{
+                    $values[]='NULL';
+		}
+                elseif (($_SESSION[$value]=='' && $fieldexists['type']=='D')||($_SESSION[$value]=='' && $fieldexists['type']=='K')||($_SESSION[$value]=='' && $fieldexists['type']=='N'))      
                 {                        
                     $values[]='NULL';
                 }
                 else  
                 {
-                	$values[]=strip_tags($connect->qstr($_SESSION[$value],get_magic_quotes_gpc()));
+                    if ($fieldexists['type']=='N') //sanitize numerical fields
+                    {
+                        $_SESSION[$value]=sanitize_float($_SESSION[$value]);                         
+                    }
+                    elseif ($fieldexists['type']=='D')  // convert the date to the right DB Format
+                    {
+                        $dateformatdatat=getDateFormatData($thissurvey['surveyls_dateformat']);
+                        $datetimeobj = new Date_Time_Converter($_SESSION[$value], $dateformatdatat['phpdate']);
+                        $_SESSION[$value]=$datetimeobj->convert("Y-m-d");     
+                        $_SESSION[$value]=$connect->BindDate($_SESSION[$value]);
+                    }
+					$values[]=$connect->qstr($_SESSION[$value],get_magic_quotes_gpc());
                 }
 
             }
@@ -424,6 +469,7 @@ function createinsertquery()
 			// INSERT NEW ROW
 			$query = "INSERT INTO ".db_quote_id($thissurvey['tablename'])."\n"
 			."(".implode(', ', array_map('db_quote_id',$colnames));
+            $query .= ",".db_quote_id('lastpage');                 
 			if ($thissurvey['datestamp'] == "Y")
 			{
 				$query .= ",".db_quote_id('datestamp');
@@ -444,6 +490,7 @@ function createinsertquery()
 			}
 			$query .=") ";
 			$query .="VALUES (".implode(", ", $values);
+            $query .= ",".($thisstep+1);          
 			if ($thissurvey['datestamp'] == "Y")
 			{
 				$query .= ", '".$_SESSION['datestamp']."'";
@@ -453,7 +500,7 @@ function createinsertquery()
 			{
 				$query .= ", '".$_SERVER['REMOTE_ADDR']."'";
 			}
-			$query .= ", '".GetBaseLanguageFromSurveyID($surveyid)."'";
+			$query .= ", '".$_SESSION['s_lang']."'";
 			if ($thissurvey['refurl'] == "Y")
 			{
 				$query .= ", '".$_SESSION['refurl']."'";
@@ -471,6 +518,7 @@ function createinsertquery()
 			if (isset($postedfieldnames) && $postedfieldnames)
 			{
 				$query = "UPDATE {$thissurvey['tablename']} SET ";
+               $query .= " lastpage = '".$thisstep."',";
 				if ($thissurvey['datestamp'] == "Y")
 				{
 					$query .= " datestamp = '".$_SESSION['datestamp']."',";
@@ -492,14 +540,14 @@ function createinsertquery()
 					foreach ($hiddenfields as $hiddenfield)
 					{
 						$fieldinfo = arraySearchByKey($hiddenfield, $fieldmap, "fieldname", 1);
-						if ($fieldinfo['type']=='D' || $fieldinfo['type']=='N' || $fieldinfo['type']=='K')
-						{
+						//if ($fieldinfo['type']=='D' || $fieldinfo['type']=='N' || $fieldinfo['type']=='K')
+						//{
 							$query .= db_quote_id($hiddenfield)." = NULL,";
-						}
-						else
-						{
-							$query .= db_quote_id($hiddenfield)." = '',";
-						}
+						//}
+						//else
+						//{
+						//	$query .= db_quote_id($hiddenfield)." = '',";
+						//}
 					}
 				}
 				else
@@ -523,7 +571,17 @@ function createinsertquery()
 						}
 						else
 						{
-							$query .= db_quote_id($field)." = ".db_quoteall(strip_tags($myFilter->process($_POST[$field])),true).",";
+                            if ($fieldinfo['type']=='N') //sanitize numerical fields
+                            {
+                                $_POST[$field]=sanitize_float($_POST[$field]);    
+                            }
+                            elseif ($fieldinfo['type']=='D')  // convert the date to the right DB Format
+                            {
+                                $dateformatdatat=getDateFormatData($thissurvey['surveyls_dateformat']);
+                                $datetimeobj = new Date_Time_Converter($_POST[$field], $dateformatdatat['phpdate']);
+                                $_POST[$field]=$connect->BindDate($datetimeobj->convert("Y-m-d"));
+                            }                            
+                            $query .= db_quote_id($field)." = ".db_quoteall($_POST[$field],true).",";
 						}
 					}
 				}
@@ -565,8 +623,8 @@ function createinsertquery()
 }
 
 // submitanswer sets the submitdate
-// only used by question.php and group.php if next pages
-// should not display due to conditions
+// Only used by question.php and group.php if next pages
+// should not display due to conditions and generally used by survey.php
 // In this case all answers have already been updated by save.php
 // but movesubmit status was only set after calling save.php
 // ==> thus we need to update submitdate here.
@@ -590,6 +648,15 @@ function submitanswer()
 	$query = "";
 	if (isset($move) && ($move == "movesubmit") && ($thissurvey['active'] == "Y"))
 	{
+		if (!isset($_SESSION['srid']))
+		{ //due to conditions no answer was displayed and yet we must submit
+			$query=createinsertquery();
+			if ($result=$connect->Execute($query))
+			{
+				$tempID=$connect->Insert_ID($thissurvey['tablename'],"id");
+				$_SESSION['srid'] = $tempID;
+			}
+		}
 		$query = "UPDATE {$thissurvey['tablename']} SET ";
 		$query .= " submitdate = ".$connect->DBDate($mysubmitdate);
 		$query .= " WHERE id=" . $_SESSION['srid'];
@@ -610,5 +677,6 @@ function submitanswer()
           }
           return $array_remval;
     }
+
 
 ?>

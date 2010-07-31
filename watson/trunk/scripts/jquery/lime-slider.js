@@ -3,6 +3,8 @@ $(document).ready(function(){
 	// call the init slider routine for each element of the .multinum-slider class
 	$(".multinum-slider").each(function(i,e) {
 		var basename = e.id.substr(10);
+		
+		$(this).prev('label').addClass('slider-label'); //3796 TP - add a class to the labels in slider questions to facilitate styling
 
 		//$("#slider-"+basename).addClass('ui-slider-2');
 		//$("#slider-handle-"+basename).addClass('ui-slider-handle2');
@@ -16,20 +18,26 @@ $(document).ready(function(){
 		var slider_suffix = $('#slider-suffix-' + basename).attr('value');
 		var sliderparams = Array();
 
-		sliderparams['min'] = slider_min;
-		sliderparams['max'] = slider_max;
+		sliderparams['min'] = slider_min*1; // to force numerical we multiply with 1
+		sliderparams['max'] = slider_max*1; // to force numerical we multiply with 1
 		// not using the stepping param because it is not smooth
 		// using Math.round workaround instead
 		//sliderparams['stepping'] = slider_stepping;
 		//sliderparams['animate'] = true;
 		if (slider_startvalue != 'NULL')
 		{
-			sliderparams['startValue']= slider_startvalue;
+			sliderparams['value']= slider_startvalue*1;
 		}
 		sliderparams['slide'] = function(e, ui) {
 				//var thevalue = ui.value / slider_divisor;
-				var thevalue = slider_stepping * Math.round(ui.value / slider_stepping) / slider_divisor;
-				$('#slider-callout-'+basename).css('left', $(ui.handle).css('left')).text(slider_prefix + thevalue + slider_suffix);
+				if ($('#slider-modifiedstate-'+basename).val() ==0) $('#slider-modifiedstate-'+basename).val('1');
+				
+				function updateCallout() {
+					var thevalue = slider_stepping * Math.round(ui.value / slider_stepping) / slider_divisor;
+					$('#slider-callout-'+basename).css('left', $(ui.handle).css('left')).text(slider_prefix + thevalue + slider_suffix);
+				}
+				// Delay updating the callout because it was picking up the last postion of the slider
+				setTimeout(updateCallout, 10); 
 			};
 		sliderparams['stop'] = function(e, ui) {
 				//var thevalue = ui.value / slider_divisor;
@@ -49,9 +57,9 @@ $(document).ready(function(){
 		$('#slider-'+basename).slider(sliderparams);
 
 		
-		if (slider_startvalue != 'NULL')
+		if (slider_startvalue != 'NULL' && $('#slider-modifiedstate-'+basename).val() !=0)
 		{
-				var thevalue = $('#slider-'+basename).slider('value') / slider_divisor;
+				var thevalue = slider_startvalue / slider_divisor;
 				$('#slider-callout-'+basename).css('left', $('#slider-handle-'+basename).css('left')).text(slider_prefix + thevalue + slider_suffix);
 		}
 	})
