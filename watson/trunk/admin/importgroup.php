@@ -10,36 +10,34 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: importgroup.php 6610 2009-04-10 14:16:25Z c_schmitz $
+* $Id: importgroup.php 8448 2010-03-02 17:24:10Z c_schmitz $
 */
 
 include_once("login_check.php");
 
 // A FILE TO IMPORT A DUMPED SURVEY FILE, AND CREATE A NEW SURVEY
 
-$importgroup = "<br /><table width='100%' align='center'><tr><td>\n";
-$importgroup .= "<table class='alertbox' >\n";
-$importgroup .= "\t<tr ><td colspan='2' height='4'><strong>".$clang->gT("Import Group")."</strong></td></tr>\n";
-$importgroup .= "\t<tr><td align='center'>\n";
+$importgroup = "<div class='header'>".$clang->gT("Import question group")."</div>\n";
+$importgroup .= "<div class='messagebox'>\n";
 
 $the_full_file_path = $tempdir . "/" . $_FILES['the_file']['name'];
 
 if (!@move_uploaded_file($_FILES['the_file']['tmp_name'], $the_full_file_path))
 {
-	$importgroup .= "<strong><font color='red'>".$clang->gT("Error")."</font></strong><br />\n";
+	$importgroup .= "<div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
     $importgroup .= sprintf ($clang->gT("An error occurred uploading your file. This may be caused by incorrect permissions in your %s folder."),$tempdir)."<br /><br />\n";
-	$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\">\n";
-	$importgroup .= "</td></tr></table>\n";
+	$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+	$importgroup .= "</div>\n";
 	return;
 }
 
 // validate that we have a SID 
 if (!returnglobal('sid'))
 {
-    $importquestion .= $clang->gT("No SID (Survey) has been provided. Cannot import group.")."<br /><br />\n"
-    ."<input type='submit' value='"
-    .$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\">\n"
-    ."</td></tr></table>\n";
+	$importgroup .= "<div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
+    $importgroup .= $clang->gT("No SID (Survey) has been provided. Cannot import group.")."<br /><br />\n";
+	$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+	$importgroup .= "</div>\n";
     unlink($the_full_file_path);
     return;
 }
@@ -51,7 +49,7 @@ else
 
 // IF WE GOT THIS FAR, THEN THE FILE HAS BEEN UPLOADED SUCCESFULLY
 
-$importgroup .= "<strong><font class='successtitle'>".$clang->gT("Success")."</font></strong><br />\n";
+$importgroup .= "<div class='successheader'>".$clang->gT("Success")."</div>&nbsp;<br />\n";
 $importgroup .= $clang->gT("File upload succeeded.")."<br /><br />\n";
 $importgroup .= $clang->gT("Reading file...")."<br />\n";
 $handle = fopen($the_full_file_path, "r");
@@ -64,12 +62,16 @@ fclose($handle);
 
 if (substr($bigarray[0], 0, 23) != "# LimeSurvey Group Dump" && substr($bigarray[0], 0, 24) != "# PHPSurveyor Group Dump")
 {
-	$importgroup .= "<strong><font color='red'>".$clang->gT("Error")."</font></strong><br />\n";
+	$importgroup .= "<br /><div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
 	$importgroup .= $clang->gT("This file is not a LimeSurvey group file. Import failed.")."<br /><br />\n";
-	$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\">\n";
-	$importgroup .= "</td></tr></table>\n";
+	$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+	$importgroup .= "</div>\n";
 	unlink($the_full_file_path);
 	return;
+}
+else
+{
+    $importversion=(int)trim(substr($bigarray[1],12));
 }
 
 for ($i=0; $i<9; $i++)
@@ -245,10 +247,10 @@ if (isset($grouparray))
 	$groupssupportbaselang = bDoesImportarraySupportsLanguage($grouparray,Array($gidfieldnum),$langfieldnum,$langcode,true);
 	if (!$groupssupportbaselang)
 	{
-		$importgroup .= "<strong><font color='red'>".$clang->gT("Error")."</font></strong><br />\n";
+		$importgroup .= "<br /><div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
 		$importgroup .= $clang->gT("You can't import a group which doesn't support the current survey's base language.")."<br /><br />\n";
-		$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\">\n";
-		$importgroup .= "</td></tr></table>\n";
+		$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+		$importgroup .= "</div>\n";
 		unlink($the_full_file_path);
 		return;
 	}
@@ -261,10 +263,10 @@ if (isset($questionarray))
 	$questionssupportbaselang = bDoesImportarraySupportsLanguage($questionarray,Array($qidfieldnum), $langfieldnum,$langcode,false);
 	if (!$questionssupportbaselang)
 	{
-		$importgroup .= "<strong><font color='red'>".$clang->gT("Error")."</font></strong><br />\n";
+		$importgroup .= "<br /><div class='warningheader'>".$clang->gT("Error")."</div><br />\n";
 		$importgroup .= $clang->gT("You can't import a question which doesn't support the current survey's base language.")."<br /><br />\n";
-		$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\">\n";
-		$importgroup .= "</td></tr></table>\n";
+		$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
+		$importgroup .= "</div>\n";
 		unlink($the_full_file_path);
 		return;
 	}
@@ -279,9 +281,10 @@ if (isset($labelsetsarray))
     $labelsetssupportbaselang = bDoesImportarraySupportsLanguage($labelsetsarray,Array($lidfilednum),$langfieldnum,$langcode,true);
     if (!$labelsetssupportbaselang)
     {
-        $importquestion .= "<strong><font color='red'>".$clang->gT("Error")."</font></strong><br />\n"
+        $importquestion .= "<br /><div class='warningheader'>".$clang->gT("Error")."</div><br />\n"
         .$clang->gT("You can't import label sets which don't support the current survey's base language")."<br /><br />\n"
-        ."</td></tr></table>\n";
+        ."</div>\n";
+		$importgroup .= "<input type='submit' value='".$clang->gT("Main Admin Screen")."' onclick=\"window.open('$scriptname', '_top')\" />\n";
         unlink($the_full_file_path);
         return;
     }
@@ -345,7 +348,7 @@ if (isset($labelsetsarray) && $labelsetsarray) {
 
         //CHECK FOR DUPLICATE LABELSETS
         $thisset="";
-        $query2 = "SELECT code, title, sortorder, language
+        $query2 = "SELECT code, title, sortorder, language, assessment_value  
                    FROM {$dbprefix}labels
                    WHERE lid=".$newlid."
                    ORDER BY language, sortorder, code";    
@@ -446,8 +449,11 @@ if (isset($grouparray) && $grouparray)
 
         $newvalues=array_values($grouprowdata);
         $newvalues=array_map(array(&$connect, "qstr"),$newvalues); // quote everything accordingly
+        if (isset($grouprowdata['gid'])) {@$connect->Execute('SET IDENTITY_INSERT '.db_table_name('groups')." ON");}
+        
         $ginsert = "insert INTO {$dbprefix}groups (".implode(',',array_keys($grouprowdata)).") VALUES (".implode(',',$newvalues).")"; 
         $gres = $connect->Execute($ginsert) or safe_die($clang->gT("Error").": Failed to insert group<br />\n$ginsert<br />\n".$connect->ErrorMsg());
+        if (isset($grouprowdata['gid'])) {@$connect->Execute('SET IDENTITY_INSERT '.db_table_name('groups').' OFF');}
         
         //GET NEW GID  .... if is not done before and we count a group if a new gid is required
         if ($newgid == 0) 
@@ -455,7 +461,6 @@ if (isset($grouparray) && $grouparray)
             $newgid = $connect->Insert_ID("{$dbprefix}groups",'gid');
             $countgroups++;
         }
-        break; //makes sure only the first group is imported
     }
     // GROUPS is DONE
     
@@ -515,7 +520,9 @@ if (isset($grouparray) && $grouparray)
             $newvalues=array_values($questionrowdata);
             $newvalues=array_map(array(&$connect, "qstr"),$newvalues); // quote everything accordingly
             $qinsert = "insert INTO {$dbprefix}questions (".implode(',',array_keys($questionrowdata)).") VALUES (".implode(',',$newvalues).")"; 
+            if (isset($questionrowdata['qid'])) {@$connect->Execute('SET IDENTITY_INSERT '.db_table_name('questions').' ON');}
             $qres = $connect->Execute($qinsert) or safe_die ($clang->gT("Error")."Failed to insert question<br />\n$qinsert<br />\n".$connect->ErrorMsg());
+            if (isset($questionrowdata['qid'])) {@$connect->Execute('SET IDENTITY_INSERT '.db_table_name('questions').' OFF');}
 
             //GET NEW QID  .... if is not done before and we count a question if a new qid is required
             if (!isset($newqids[$oldqid])) 
@@ -574,7 +581,7 @@ if (isset($grouparray) && $grouparray)
    $gres = db_execute_assoc($gquery);
    while ($grow = $gres->FetchRow()) 
         {
-        fixsortorderQuestions(0,$grow['gid']);
+        fixsortorderQuestions($grow['gid'], $surveyid);
         }
    } 
     
@@ -637,7 +644,14 @@ if (isset($grouparray) && $grouparray)
             unset($conditionrowdata["cid"]); 
             
             // recreate the cfieldname with the new IDs
-            $newcfieldname = $newsid . "X" . $newgid . "X" . $conditionrowdata["cqid"] .substr($oldqidanscode,strlen($oldqid));
+	    if (preg_match("/^\+/",$oldcsid))
+	    {
+		    $newcfieldname = '+'.$newsid . "X" . $newgid . "X" . $conditionrowdata["cqid"] .substr($oldqidanscode,strlen($oldqid));
+	    }
+	    else
+	    {
+		    $newcfieldname = $newsid . "X" . $newgid . "X" . $conditionrowdata["cqid"] .substr($oldqidanscode,strlen($oldqid));
+	    }
             
             $conditionrowdata["cfieldname"] = $newcfieldname;
             if (!isset($conditionrowdata["method"]) || trim($conditionrowdata["method"])=='') 
@@ -656,7 +670,7 @@ if (isset($grouparray) && $grouparray)
 
 if (isset($skippedlanguages))
 {
-    $importgroup.='<font class="successtitle">'.$clang->gT("Import partially successful.")."</font><br /><br />";
+	$importgroup.="<br /><div class='partialheader'>".$clang->gT("Import partially successful.")."</div><br />";
     $importgroup.=$clang->gT("The following languages in this group were not imported since the survey does not contain such a language: ")."<br />";
     foreach  ($skippedlanguages as $sl)
     {
@@ -666,10 +680,10 @@ if (isset($skippedlanguages))
 }
 else
 {
-    $importgroup .= "<br />\n<strong><font class='successtitle'>".$clang->gT("Success")."</font></strong><br />\n";
+    $importgroup .= "<br />\n<div class='successheader'>".$clang->gT("Success")."</div><br />\n";
 }
 $importgroup .="<strong><u>".$clang->gT("Group Import Summary")."</u></strong><br />\n"
-."<ul>\n\t<li>".$clang->gT("Groups").": ";
+."<ul>\n\t<li>".$clang->gT("Groups:");
 if (isset($countgroups)) {$importgroup .= $countgroups;}
 $importgroup .= "</li>\n"
     ."\t<li>".$clang->gT("Questions").": ";
@@ -689,9 +703,8 @@ $importgroup .= ")</li>\n";
 $importgroup .= "\t<li>".$clang->gT("Question Attributes: ");
 $importgroup .= $countquestion_attributes;
 $importgroup .= "</li>\n</ul>\n";
-$importgroup .= "<strong>".$clang->gT("Import of group is completed.")."</strong><br />&nbsp;\n";
-$importgroup .= "<a href='$scriptname?sid=$newsid&amp;gid=$newgid'>".$clang->gT("Go to group")."</a><br />\n";
-$importgroup .= "</td></tr></table><br />&nbsp;\n";
+$importgroup .= "<strong>".$clang->gT("Import of group is completed.")."</strong><br /><br />\n";
+$importgroup .= "<input type='submit' value='".$clang->gT("Go to group")."' onclick=\"window.open('$scriptname?sid=$newsid&amp;gid=$newgid', '_top')\" />\n";
 
 
 unlink($the_full_file_path);

@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: load.php 4975 2008-06-01 14:20:30Z lemeur $
+* $Id: load.php 7699 2009-09-30 22:28:50Z c_schmitz $
 */
 
 //Security Checked: POST, GET, SESSION, REQUEST, returnglobal, DB
@@ -30,9 +30,9 @@ foreach(file("$thistpl/startpage.pstpl") as $op)
 }
 echo "\n\n<!-- JAVASCRIPT FOR CONDITIONAL QUESTIONS -->\n"
 ."\t<script type='text/javascript'>\n"
-."\t\tfunction checkconditions(value, name, type)\n"
-."\t\t\t{\n"
-."\t\t\t}\n"
+."function checkconditions(value, name, type)\n"
+."\t{\n"
+."\t}\n"
 ."\t</script>\n\n";
 
 echo "<form method='post' action='$relativeurl/index.php'>\n";
@@ -43,8 +43,8 @@ foreach(file("$thistpl/load.pstpl") as $op)
 //PRESENT OPTIONS SCREEN (Replace with Template Later)
 //END
 //echo "<input type='hidden' name='PHPSESSID' value='".session_id()."'>\n";
-echo "<input type='hidden' name='sid' value='$surveyid'>\n";
-echo "<input type='hidden' name='loadall' value='reload'>\n";
+echo "<input type='hidden' name='sid' value='$surveyid' />\n";
+echo "<input type='hidden' name='loadall' value='reload' />\n";
 echo "</form>";
 
 foreach(file("$thistpl/endpage.pstpl") as $op)

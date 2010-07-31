@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: printanswers.php 6650 2009-04-16 09:15:57Z lemeur $
+* $Id: printanswers.php 8488 2010-03-15 21:35:23Z c_schmitz $
 * 
 */
 
@@ -26,10 +26,42 @@ if(isset($usepdfexport) && $usepdfexport == 1)
 
 //DEFAULT SETTINGS FOR TEMPLATES
 if (!$publicdir) {$publicdir=".";}
-$tpldir="$publicdir/templates";
+$templaterootdir="$publicdir/templates";
 
+
+if (!isset($surveyid)) {$surveyid=returnglobal('sid');}
+else {
+        //This next line ensures that the $surveyid value is never anything but a number.
+        $surveyid=sanitize_int($surveyid);
+     }
+
+// Compute the Session name
+// Session name is based:
+// * on this specific limesurvey installation (Value SessionName in DB)
+// * on the surveyid (from Get or Post param). If no surveyid is given we are on the public surveys portal
+$usquery = "SELECT stg_value FROM ".db_table_name("settings_global")." where stg_name='SessionName'";
+$usresult = db_execute_assoc($usquery,'',true);          //Checked 
+if ($usresult)
+{
+    $usrow = $usresult->FetchRow();
+    $stg_SessionName=$usrow['stg_value'];
+    if ($surveyid)
+    {
+        @session_name($stg_SessionName.'-runtime-'.$surveyid);
+    }
+    else
+    {
+        @session_name($stg_SessionName.'-runtime-publicportal');
+    }
+}
+else
+{
+    session_name("LimeSurveyRuntime-$surveyid");
+}
+session_set_cookie_params(0,$relativeurl);
 @session_start();
-if (isset($_SESSION['sid'])) {$surveyid=$_SESSION['sid'];}  else die(); 
+
+if (isset($_SESSION['sid'])) {$surveyid=$_SESSION['sid'];}  else die('Invalid survey/session'); 
 
 //Debut session time out
 if (!isset($_SESSION['finished']) || !isset($_SESSION['srid']))
@@ -44,14 +76,14 @@ if (!isset($_SESSION['finished']) || !isset($_SESSION['srid']))
 	sendcacheheaders();
 	doHeader();
 
-	echo templatereplace(file_get_contents("$tpldir/default/startpage.pstpl"));
-	echo "\t\t<center><br />\n"
-	."\t\t\t<font color='RED'><strong>".$clang->gT("ERROR")."</strong></font><br />\n"
-	."\t\t\t".$clang->gT("We are sorry but your session has expired.")."<br />".$clang->gT("Either you have been inactive for too long, you have cookies disabled for your browser, or there were problems with your connection.")."<br />\n"
-    ."\t\t\t".sprintf($clang->gT("Please contact %s ( %s ) for further assistance."),$siteadminname,$siteadminemail)."\n"
-	."\t\t</center><br />\n";
+	echo templatereplace(file_get_contents("$templaterootdir/default/startpage.pstpl"));
+	echo "<center><br />\n"
+	."\t<font color='RED'><strong>".$clang->gT("ERROR")."</strong></font><br />\n"
+	."\t".$clang->gT("We are sorry but your session has expired.")."<br />".$clang->gT("Either you have been inactive for too long, you have cookies disabled for your browser, or there were problems with your connection.")."<br />\n"
+    ."\t".sprintf($clang->gT("Please contact %s ( %s ) for further assistance."),$siteadminname,$siteadminemail)."\n"
+	."</center><br />\n";
 
-	echo templatereplace(file_get_contents("$tpldir/default/endpage.pstpl"));
+	echo templatereplace(file_get_contents("$templaterootdir/default/endpage.pstpl"));
 	doFooter();
 	exit;
 };
@@ -95,8 +127,8 @@ $result = db_execute_assoc($query) or safe_die("Error selecting language: <br />
 $language = GetBaseLanguageFromSurveyID($surveyid);
 $thissurvey = getSurveyInfo($surveyid);
 //SET THE TEMPLATE DIRECTORY
-if (!$thissurvey['templatedir']) {$thistpl=$tpldir."/default";} else {$thistpl=$tpldir."/{$thissurvey['templatedir']}";}
-if (!is_dir($thistpl)) {$thistpl=$tpldir."/default";}
+if (!$thissurvey['templatedir']) {$thistpl=$templaterootdir."/default";} else {$thistpl=$templaterootdir."/{$thissurvey['templatedir']}";}
+if (!is_dir($thistpl)) {$thistpl=$templaterootdir."/default";}
 
 if ($thissurvey['printanswers']=='N') die();  //Die quietly if print answers is not permitted
 
@@ -126,6 +158,7 @@ require_once($rootdir.'/classes/core/language.php');  // has been secured
 if (isset($_SESSION['s_lang']))
 {
     $clang = SetSurveyLanguage( $surveyid, $_SESSION['s_lang']);
+    $language = $_SESSION['s_lang'];
 } else {
     $baselang = GetBaseLanguageFromSurveyID($surveyid);
     $clang = SetSurveyLanguage( $surveyid, $baselang);
@@ -134,7 +167,7 @@ if (isset($_SESSION['s_lang']))
     $printoutput = '';
     if(isset($usepdfexport) && $usepdfexport == 1)
     {
-        $printoutput .= "<form action='printanswers.php?printableexport=pdf' method='post'>\n<center><input type='submit' value='".$clang->gT("PDF Export")."'id=\"exportbutton\"/><input type='hidden' name='printableexport' /></center></form>";
+        $printoutput .= "<form action='printanswers.php?printableexport=pdf&sid=$surveyid' method='post'>\n<center><input type='submit' value='".$clang->gT("PDF Export")."'id=\"exportbutton\"/><input type='hidden' name='printableexport' /></center></form>";
     }
     if(isset($_POST['printableexport']))
     {
@@ -217,6 +250,7 @@ if (isset($_SESSION['s_lang']))
 				}
 				elseif ($fnrow['type'] == ":" || $fnrow['type'] == ";") //MultiFlexi Numbers or Text
 				{
+                    $lset=array();
 					$fnrquery = "SELECT *
 						FROM ".db_table_name('answers')." 
 						WHERE qid={$fnrow['qid']}
@@ -269,13 +303,13 @@ if (isset($_SESSION['s_lang']))
 					$aresult=db_execute_assoc($aquery) or safe_die ("Couldn't get answers to Array questions<br />$aquery<br />".$connect->ErrorMsg()); //Checked   
 					$header1=$clang->gT('First Scale');
 					$header2=$clang->gT('Second Scale');
-					if ($thisheader=arraySearchByKey("dualscale_headerA", $qidattributes, "attribute", 1))      
+					if (trim($qidattributes['dualscale_headerA'])!='')      
 					{
-						$header1=$thisheader['value'];
+						$header1=$clang->gT($qidattributes['dualscale_headerA']);
 					}
-					if ($thisheader=arraySearchByKey("dualscale_headerB", $qidattributes, "attribute", 1))      
+                    if (trim($qidattributes['dualscale_headerB'])!='')      
 					{
-						$header2=$thisheader['value'];
+                        $header2=$clang->gT($qidattributes['dualscale_headerB']);
 					}
 					while ($arows = $aresult->FetchRow())
 					{
@@ -324,15 +358,15 @@ if (isset($_SESSION['s_lang']))
 		for ($i; $i<$nfncount+1; $i++)
 		{
 			$printoutput .= "\t<tr>\n"
-			."\t\t<td>{$fnames[$i][2]}</td>\n"
-			."\t\t<td>"
+			."<td>{$fnames[$i][2]}</td>\n"
+			."<td>"
 			.getextendedanswer($fnames[$i][0], $idrow[$fnames[$i][0]])
 			."</td>\n"
 			."\t</tr>\n";
             
             if(isset($_POST['printableexport']))
             {
-                $pdf->intopdf(strip_tags($fnames[$i][2]).": ".strip_tags(getextendedanswer($fnames[$i][0], $idrow[$fnames[$i][0]])));
+                $pdf->intopdf(FlattenText($fnames[$i][2]).": ".FlattenText(getextendedanswer($fnames[$i][0], $idrow[$fnames[$i][0]])));
                 $pdf->ln(2);
             }
 		}

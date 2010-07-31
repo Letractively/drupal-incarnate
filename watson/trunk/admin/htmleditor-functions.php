@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: htmleditor-functions.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: htmleditor-functions.php 7699 2009-09-30 22:28:50Z c_schmitz $
 */
 
 //include_once("login_check.php");
@@ -25,39 +25,39 @@ function PrepareEditorPopupScript()
 	. "var editorwindowsHash = new Object();\n"
 	. "function find_popup_editor(fieldname)\n"
 	. "\t{\t\n"
-	. "\t\tvar window = null;\n"
-	. "\t\tfor (var key in editorwindowsHash)\n"
-	. "\t\t{\n"
-	. "\t\t\tif (key==fieldname && !editorwindowsHash[key].closed)\n"
-	. "\t\t\t{\n"
-	. "\t\t\t\twindow = editorwindowsHash[key];\n"
-	. "\t\t\t\treturn window;\n"
-	. "\t\t\t}\n"
-	. "\t\t}\n"
+	. "var window = null;\n"
+	. "for (var key in editorwindowsHash)\n"
+	. "{\n"
+	. "\tif (key==fieldname && !editorwindowsHash[key].closed)\n"
+	. "\t{\n"
+	. "window = editorwindowsHash[key];\n"
+	. "return window;\n"
+	. "\t}\n"
+	. "}\n"
 	. "\treturn null;\n"
 	. "\t}\t\n"
 	. "\n"
 	. "function start_popup_editor(fieldname, fieldtext, sid, gid, qid, fieldtype, action)\n"	
 	. "\t{\t\n"
-//	. "\t\tcontrolid = fieldname + '_popupctrl';\n"
-	. "\t\tcontrolidena = fieldname + '_popupctrlena';\n"
-	. "\t\tcontroliddis = fieldname + '_popupctrldis';\n"
-	. "\t\tnumwindows = editorwindowsHash.length;\n"
-	. "\t\tactivepopup = find_popup_editor(fieldname);\n"
-	. "\t\tif (activepopup == null)\n"
-	. "\t\t{\n"
-	. "\t\t\tdocument.getElementsByName(fieldname)[0].readOnly=true;\n"
-	. "\t\t\tdocument.getElementsByName(fieldname)[0].className='readonly';\n"
-//	. "\t\t\tdocument.getElementById(controlid).src='".$imagefiles."/edithtmlpopup_disabled.png';\n"
-	. "\t\t\tdocument.getElementById(controlidena).style.display='none';\n"
-	. "\t\t\tdocument.getElementById(controliddis).style.display='';\n"
-	. "\t\t\tpopup = window.open('".$homeurl."/htmleditor-popup.php?fieldname='+fieldname+'&fieldtext='+fieldtext+'&fieldtype='+fieldtype+'&action='+action+'&sid='+sid+'&gid='+gid+'&qid='+qid+'&lang=".$clang->getlangcode()."','', 'location=no, status=yes, scrollbars=auto, menubar=no, resizable=yes, width=600, height=400');\n"
-	. "\t\t\teditorwindowsHash[fieldname] = popup;\n"
-	. "\t\t}\n"
-	. "\t\telse\n"
-	. "\t\t{\n"
-	. "\t\t\tactivepopup.focus();\n"
-	. "\t\t}\n"
+//	. "controlid = fieldname + '_popupctrl';\n"
+	. "controlidena = fieldname + '_popupctrlena';\n"
+	. "controliddis = fieldname + '_popupctrldis';\n"
+	. "numwindows = editorwindowsHash.length;\n"
+	. "activepopup = find_popup_editor(fieldname);\n"
+	. "if (activepopup == null)\n"
+	. "{\n"
+	. "\tdocument.getElementsByName(fieldname)[0].readOnly=true;\n"
+	. "\tdocument.getElementsByName(fieldname)[0].className='readonly';\n"
+//	. "\tdocument.getElementById(controlid).src='".$imagefiles."/edithtmlpopup_disabled.png';\n"
+	. "\tdocument.getElementById(controlidena).style.display='none';\n"
+	. "\tdocument.getElementById(controliddis).style.display='';\n"
+	. "\tpopup = window.open('".$homeurl."/htmleditor-popup.php?fieldname='+fieldname+'&fieldtext='+fieldtext+'&fieldtype='+fieldtype+'&action='+action+'&sid='+sid+'&gid='+gid+'&qid='+qid+'&lang=".$clang->getlangcode()."','', 'location=no, status=yes, scrollbars=auto, menubar=no, resizable=yes, width=600, height=400');\n"
+	. "\teditorwindowsHash[fieldname] = popup;\n"
+	. "}\n"
+	. "else\n"
+	. "{\n"
+	. "\tactivepopup.focus();\n"
+	. "}\n"
 	. "\t}\n"
 	. "\n"
 	. "function updateFCKeditor(fieldname,value)\n" 
@@ -65,9 +65,9 @@ function PrepareEditorPopupScript()
 	. "\tvar mypopup= editorwindowsHash[fieldname];\n"
 	. "\tif (mypopup)\n"
 	. "\t{\n"
-	. "\t\tvar oMyEditor = mypopup.FCKeditorAPI.GetInstance('MyTextarea');\n"
-	. "\t\tif (oMyEditor) {oMyEditor.SetHTML(value);}\n"
-	. "\t\tmypopup.focus();\n"
+	. "var oMyEditor = mypopup.FCKeditorAPI.GetInstance('MyTextarea');\n"
+	. "if (oMyEditor) {oMyEditor.SetHTML(value);}\n"
+	. "mypopup.focus();\n"
 	. "\t}\n"
 	. "}\n"
 	. "--></script>\n";
@@ -226,7 +226,7 @@ function getPopupEditor($fieldtype,$fieldname,$fieldtext, $surveyID=null,$gID=nu
 
 function getInlineEditor($fieldtype,$fieldname,$fieldtext, $surveyID=null,$gID=null,$qID=null,$action=null)
 {
-	global $clang, $imagefiles, $homeurl, $rooturl, $fckeditordir;
+	global $clang, $imagefiles, $homeurl, $rooturl, $fckeditordir, $fckeditexpandtoolbar;
 
 	$htmlcode = '';
 	$imgopts = '';
@@ -246,6 +246,13 @@ function getInlineEditor($fieldtype,$fieldname,$fieldtext, $surveyID=null,$gID=n
 		. "$oFCKeditorVarName.Config[\"ToolbarCanCollapse\"]=false;\n"
 		. "$oFCKeditorVarName.Height = \"50\"\n";
 	}
+	else
+	{
+		if (!isset($fckeditexpandtoolbar) || $fckeditexpandtoolbar == true)
+		{
+			$toolbaroption .= "$oFCKeditorVarName.Config[\"ToolbarStartExpanded\"]=true;\n";
+		}
+	}
 
 	if ( $fieldtype == 'email-inv' ||
 		$fieldtype == 'email-reg' ||
@@ -254,6 +261,7 @@ function getInlineEditor($fieldtype,$fieldname,$fieldtext, $surveyID=null,$gID=n
 	{
 		$htmlformatoption = "$oFCKeditorVarName.Config[\"FullPage\"]=true;\n";
 	}
+
 
 	$htmlcode .= ""
 	. "<script type=\"text/javascript\">\n"

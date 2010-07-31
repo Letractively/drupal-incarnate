@@ -1,21 +1,4 @@
-function hide(element) {
-    $('#'+element).slideUp('normal');
-}
-function show(element) {
-    $('#'+element).slideDown('normal');
-}
-
 $(document).ready(function(){
-     $('#filterinc').change(function(){
-         if ($('#filterinc').val()=="filter") {
-            $('#noncompleted').attr("checked", "");
-             $('#vertical_slide').slideUp('normal'); 
-         }
-         else
-         {
-             $('#vertical_slide').slideDown('normal'); 
-         }
-     })
      $('#usegraph').click( function(){
         if ($('#grapherror').length>0)
         { 
@@ -23,6 +6,30 @@ $(document).ready(function(){
             $('#usegraph').attr('checked',false);
         }
      })
+     $('#viewsummaryall').click( function(){
+        if ($('#viewsummaryall').attr('checked')==true)
+        { 
+            $('#filterchoices input[type=checkbox]').attr('checked', true);
+        }
+        else
+        {
+            $('#filterchoices input[type=checkbox]').attr('checked', false);
+            
+        }
+     })
+     $('#hidefilter').click( function(){
+            $('#filterchoices').hide();
+            $('#filterchoice_state').val('1');
+            $('#vertical_slide2').hide();               
+     })
+     $('#showfilter').click( function(){
+            $('#filterchoices').show();
+            $('#filterchoice_state').val('');
+            $('#vertical_slide2').show();               
+     })
+     
+     
+     
 });
 
 function showhidefilters(value) {
@@ -31,4 +38,22 @@ function showhidefilters(value) {
  } else {
    show('filterchoices');
  }
+}
+
+function selectCheckboxes(Div, CheckBoxName, Button)
+{	
+	var aDiv = document.getElementById(Div);
+	var nInput = aDiv.getElementsByTagName("input");
+	var Value = document.getElementById(Button).checked;
+	//alert(Value);
+	
+	for(var i = 0; i < nInput.length; i++)
+	{
+		if(nInput[i].getAttribute("name")==CheckBoxName)
+		nInput[i].checked = Value;
+	}
+}
+function nographs()
+{
+	document.getElementById('usegraph').checked = false;
 }

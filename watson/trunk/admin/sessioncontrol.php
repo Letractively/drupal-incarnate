@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: sessioncontrol.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: sessioncontrol.php 8488 2010-03-15 21:35:23Z c_schmitz $
 */
 
 // Security Checked: POST, GET, SESSION, REQUEST, returnglobal, DB     
@@ -21,55 +21,35 @@
 if (!isset($dbprefix) || isset($_REQUEST['dbprefix'])) {die("Cannot run this script directly");}
 
 // Read the session name from the settings table
-$usquery = "SELECT stg_value FROM ".db_table_name("settings_global")." where stg_name='SessionName'";
-$usresult = db_execute_assoc($usquery,'',true);       // CHecked
+$usresult = getGlobalSetting('SessionName'); 
 if ($usresult)
 {
-	$usrow = $usresult->FetchRow();
-	@session_name($usrow['stg_value']);
+	@session_name($usresult);
 }
  else {session_name("LimeSurveyAdmin");}
  
  
 if (session_id() == "") 
 {
+   session_set_cookie_params(0,$relativeurl);
    if ($debug==0) {@session_start();}
     else  {session_start();}
 }
+
 //LANGUAGE ISSUES
 // if changelang is called from the login page, then there is no userId 
 //  ==> thus we just change the login form lang: no user profile update
 // if changelang is called from another form (after login) then update user lang
 // when a loginlang is specified at login time, the user profile is updated in usercontrol.php 
-if (returnglobal('action') == "changelang" && (!isset($login) || !$login ))	
+if (returnglobal('action') == "savepersonalsettings" && (!isset($login) || !$login ))	
 	{
 	$_SESSION['adminlang']=returnglobal('lang');
-	// if user is logged in update language in database
-	if(isset($_SESSION['loginID']))
-		{
-		$uquery = "UPDATE {$dbprefix}users SET lang='{$_SESSION['adminlang']}' WHERE uid={$_SESSION['loginID']}";	//		added by Dennis
-		$uresult = $connect->Execute($uquery); //Checked
-		}
 	}
 elseif (!isset($_SESSION['adminlang']) || $_SESSION['adminlang']=='' )
 	{
 	$_SESSION['adminlang']=$defaultlang;
 	}
 
-// if changehtmleditormode is called then update user htmleditormode
-if (returnglobal('action') == "changehtmleditormode" )	
-	{
-	$_SESSION['htmleditormode']=returnglobal('htmleditormode');
-	if(isset($_SESSION['loginID']))
-		{
-		$uquery = "UPDATE {$dbprefix}users SET htmleditormode='{$_SESSION['htmleditormode']}' WHERE uid={$_SESSION['loginID']}";	//		added by Dennis
-		$uresult = $connect->Execute($uquery) or die("Can't update htmleditor setting"); //Checked
-		}
-	}
-elseif (!isset($_SESSION['htmleditormode']) || $_SESSION['htmleditormode']=='' )
-	{
-	$_SESSION['htmleditormode']=$defaulthtmleditormode;
-	}
 
 // Construct the language class, and set the language.
 if (isset($_REQUEST['rootdir'])) {die('You cannot start this script directly');}
@@ -83,8 +63,6 @@ if(isset($_SESSION['loginID'])) {GetSessionUserRights($_SESSION['loginID']);}
 // and not GET requests
 $dangerousActionsArray = Array
 	(
-		'changelang' => Array(),
-		'changehtmleditormode' => Array(),
 		'deluser' => Array(),
 		'moduser' => Array(),
 		'usertemplates' => Array(),
@@ -98,7 +76,7 @@ $dangerousActionsArray = Array
 		'insertnewsurvey' => Array(),
 		'importsurvey' => Array(),
 		'updatesurvey' => Array(),
-		'importsurvresources' => Array(),
+		'importsurveyresources' => Array(),
 		'updatesurvey2' => Array(),
 		'deletesurvey' => Array(),
 		'renumberquestions' => Array(),
@@ -111,9 +89,6 @@ $dangerousActionsArray = Array
 		'updatequestion' => Array(),
 		'copynewquestion' => Array(),
 		'delquestion' => Array(),
-		'addattribute' => Array(),
-		'editattribute' => Array(),
-		'delattribute' => Array(),
 		'modanswer' => Array(),
 		'resetsurveylogic' => Array(),
 		'activate' => Array(
@@ -221,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) &&
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && 
 	returnglobal('action') != 'login' &&
     returnglobal('action') != 'forgotpass' &&
-    returnglobal('action') != 'changelang' &&
+    returnglobal('action') != 'ajaxquestionattributes' &&
 	returnglobal('action') != '')
 {
 	if (returnglobal('checksessionbypost') != $_SESSION['checksessionpost'])

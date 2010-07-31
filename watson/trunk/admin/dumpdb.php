@@ -10,17 +10,42 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: dumpdb.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: dumpdb.php 7699 2009-09-30 22:28:50Z c_schmitz $
 */
 
 include_once("login_check.php");  //Login Check dies also if the script is started directly
 
-if ($database_exists && $databasetype=='mysql' && $demoModeOnly != true) {
+if ($database_exists && ($databasetype=='mysql' || $databasetype=='mysqli') && $demoModeOnly != true && $action=='dumpdb') {
 
+	$export=completedump();
+
+	$file_name = "LimeSurvey_{$databasename}_dump_".date_shift(date("Y-m-d H:i:s"), "Y-m-d", $timeadjust).".sql";
+	Header("Content-type: application/octet-stream");
+	Header("Content-Disposition: attachment; filename=$file_name");
+	Header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+	echo $export;
+	exit;
+}
+ else 
+ {
+	$dumpdboutput= "<br />\n"
+				   ."<table class='alertbox' >\n"
+			   	   ."\t<tr ><td height='4'><font size='1'><strong>".$clang->gT("Export database")."</strong></font></td></tr>\n"
+				   ."\t<tr ><td height='4'>".$clang->gT("The database export is only available for MySQL databases. For other database types please use the according backup mechanism to create a database dump.")."</td></tr>"
+			       ."</table><br />";
+    return;           
+ }
+
+    /**
+    * Creates a full dump of the current LimeSurvey database
+    * 
+    * @returns string Contains the dumped data
+    */
+    function completedump()
+    {
+        global $connect, $databasename, $dbprefix, $allowexportalldb;
 	$tables = $connect->MetaTables();
-	
-	$export="";
-	$export .="#------------------------------------------"."\n";
+        $export ="#------------------------------------------"."\n";
 	$export .="# LimeSurvey Database Dump of `$databasename`"."\n";
 	if ($allowexportalldb==0) {
 		$export .="# Only prefixed tables with: ". $dbprefix ."\n";
@@ -40,25 +65,11 @@ if ($database_exists && $databasetype=='mysql' && $demoModeOnly != true) {
 			$export .= datadump($table);
 		}
 	}
-	
-	$file_name = "LimeSurvey_{$databasename}_dump_".date_shift(date("Y-m-d H:i:s"), "Y-m-d", $timeadjust).".sql";
-	Header("Content-type: application/octet-stream");
-	Header("Content-Disposition: attachment; filename=$file_name");
-	Header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-	echo $export;
-	exit;
+        return $export;
 }
- else 
- {
-	$dumpdboutput= "<br />\n"
-				   ."<table class='alertbox' >\n"
-			   	   ."\t<tr ><td height='4'><font size='1'><strong>".$clang->gT("Export database")."</strong></font></td></tr>\n"
-				   ."\t<tr ><td height='4'>".$clang->gT("The database export is only available for MySQL databases. For other database types please use the according backup mechanism to create a database dump.")."</td></tr>"
-			       ."</table><br />";
-    return;           
- }
 
 
+ 
 	function defdump($tablename)
 	{
 		global $connect;
@@ -77,7 +88,7 @@ if ($database_exists && $databasetype=='mysql' && $demoModeOnly != true) {
 			if ($row["Extra"] != "") $def .= " $row[Extra]";
 			$def .= ",\n";
 		}
-		$def = ereg_replace(",\n$","", $def);
+		$def = preg_replace("#,\n$#","", $def);
 	
 		$result = db_execute_assoc("SHOW KEYS FROM $tablename");
 		while($row = $result->FetchRow())
@@ -116,9 +127,17 @@ if ($database_exists && $databasetype=='mysql' && $demoModeOnly != true) {
 			@set_time_limit(5);
 			$result .= "INSERT INTO ".$table." VALUES(";
 			for($j=0; $j<$num_fields; $j++) {
-				$row[$j] = addslashes($row[$j]);
-				$row[$j] = ereg_replace("\n","\\n",$row[$j]);
-				if (isset($row[$j])) $result .= "\"$row[$j]\"" ; else $result .= "\"\"";
+				if (isset($row[$j]) && !is_null($row[$j]))
+                {
+                    $row[$j] = addslashes($row[$j]);
+                    $row[$j] = preg_replace("#\n#","\\n",$row[$j]);
+                    $result .= "\"$row[$j]\"";
+                }
+                else 
+                {
+                    $result .= "NULL";
+                }
+                
 				if ($j<($num_fields-1)) $result .= ",";
 			}
 			$result .= ");\n";

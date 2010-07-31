@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: fck_LimeReplacementFields.php 6606 2009-04-09 18:26:36Z c_schmitz $
+* $Id: fck_LimeReplacementFields.php 8183 2009-12-21 14:22:26Z tpartner $
 */
 
 include_once("login_check.php");
@@ -38,6 +38,7 @@ $limereplacementoutput="<html>\n"
 	. "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n"
 	. "\t\t<meta content=\"noindex, nofollow\" name=\"robots\">\n"
 	. "\t\t<script src=\"$fckeditordir/editor/dialog/common/fck_dialog_common.js\" type=\"text/javascript\"></script>\n"
+	. "\t\t<script src=\"$rooturl/scripts/jquery/jquery.js\" type=\"text/javascript\"></script>\n"
 	. "\t\t<script language=\"javascript\">\n"
 	. "\t\t\tvar mydialog = window.parent ;\n"
 	. "\t\t\tvar oEditor = mydialog.InnerDialogLoaded() ;\n"
@@ -50,8 +51,8 @@ $limereplacementoutput="<html>\n"
 	. "\t\t\t\tLoadSelected() ;\n"
 	. "\t\t\t\tmydialog.SetOkButton( true ) ;\n"
 	. "\n"
-	. "\t\t\t\tSelectField( 'cquestions' ) ;\n" 
-	. "\t\t\t});\n"
+	. "SelectField( 'cquestions' ) ;\n" 
+	. "\t});\n"
 	. "\n";
 
 /**$limereplacementoutput="\n"
@@ -66,7 +67,7 @@ $limereplacementoutput="<html>\n"
 **/
 
 $limereplacementoutput .= ""
-	. "\t\t\tvar eSelected = dialog.Selection.GetSelectedElement() ;\n"
+	. "\tvar eSelected = dialog.Selection.GetSelectedElement() ;\n"
 	. "\n";
 
 /**
@@ -74,51 +75,55 @@ $limereplacementoutput="\n"
 	. "function LoadSelected()\n"
 	. "{\n"
 	. "\tif ( innertext == '' )\n"
-	. "\t\treturn ;\n"
+	. "return ;\n"
 	. "var replcode=innertext.substring(innertext.indexOf('{')+1,innertext.lastIndexOf('}'));\n"
-	. "\t\tdocument.getElementById('cquestions').value = replcode;\n"
+	. "document.getElementById('cquestions').value = replcode;\n"
 	. "}\n";
 **/
 
 $limereplacementoutput .= ""
-	. "\t\t\tfunction LoadSelected()\n"
-	. "\t\t\t{\n"
-	. "\t\t\t\tif ( !eSelected )\n"
-	. "\t\t\t\t\treturn ;\n"
-	. "\t\t\t\tif ( eSelected.tagName == 'SPAN' && eSelected._fckLimeReplacementFields )\n"
-	. "\t\t\t\t\t document.getElementById('cquestions').value = eSelected._fckLimeReplacementFields ;\n"
-	. "\t\t\t\telse\n"
-	. "\t\t\t\t\teSelected == null ;\n"
-	. "\t\t\t}\n";
+	. "\tfunction LoadSelected()\n"
+	. "\t{\n"
+	. "if ( !eSelected )\n"
+	. "\treturn ;\n"
+	. "if ( eSelected.tagName == 'SPAN' && eSelected._fckLimeReplacementFields )\n"
+	. "\t document.getElementById('cquestions').value = eSelected._fckLimeReplacementFields ;\n"
+	. "else\n"
+	. "\teSelected == null ;\n"
+	. "\t}\n";
 	
 	
 $limereplacementoutput .= ""
-	. "\t\t\tfunction Ok()\n"
-	. "\t\t\t{\n"
-	. "\t\t\t\tvar sValue = document.getElementById('cquestions').value ;\n"
+	. "\tfunction Ok()\n"
+	. "\t{\n"
+	. "var sValue = document.getElementById('cquestions').value ;\n"
 
-	. "\t\t\t\tFCKLimeReplacementFieldss.Add( sValue ) ;\n"
-	. "\t\t\t\treturn true ;\n"
-	. "\t\t\t}\n";
+	. "FCKLimeReplacementFieldss.Add( sValue ) ;\n"
+	. "return true ;\n"
+	. "\t}\n";
 
 $limereplacementoutput .= ""
-	. "\t\t\t</script>\n"
-	. "\t\t</head>\n";
+	. "\t</script>\n"
+	. "</head>\n";
 
-$limereplacementoutput .= "\t<body scroll=\"no\" style=\"OVERFLOW: hidden\">\n"
-			. "\t\t<table height=\"100%\" cellSpacing=\"0\" cellPadding=\"0\" width=\"100%\" border=\"0\">\n"
-			. "\t\t\t<tr>\n"
-			. "\t\t\t\t<td>\n";
+$limereplacementoutput .= "\t<body scroll=\"no\" style=\"OVERFLOW: hidden;\">\n"
+			. "<table height=\"100%\" cellSpacing=\"0\" cellPadding=\"0\" width=\"100%\" border=\"0\">\n"
+			. "\t<tr>\n"
+			. "<td>\n";
 
 switch ($fieldtype)
 {
 	case 'survey-desc':
 	case 'survey-welc':
+	case 'survey-endtext':
 		$replFields[]=array('TOKEN:FIRSTNAME',$clang->gT("Firstname from token"));
 		$replFields[]=array('TOKEN:LASTNAME',$clang->gT("Lastname from token"));
 		$replFields[]=array('TOKEN:EMAIL',$clang->gT("Email from the token"));
-		$replFields[]=array('TOKEN:ATTRIBUTE_1',$clang->gT("Attribute_1 from token"));
-		$replFields[]=array('TOKEN:ATTRIBUTE_2',$clang->gT("Attribute_2 from token"));
+        $attributes=GetTokenFieldsAndNames($surveyid,true);
+        foreach ($attributes as $attributefield=>$attributedescription)
+        {
+            $replFields[]=array('TOKEN:'.strtoupper($attributefield), sprintf($clang->gT("Token attribute: %s"),$attributedescription));
+        }
 		$replFields[]=array('EXPIRY',$clang->gT("Survey expiration date (YYYY-MM-DD)"));
 		$replFields[]=array('EXPIRY-DMY',$clang->gT("Survey expiration date (DD-MM-YYYY)"));
 		$replFields[]=array('EXPIRY-MDY',$clang->gT("Survey expiration date (MM-DD-YYYY)"));
@@ -136,8 +141,11 @@ switch ($fieldtype)
 		$replFields[]=array('LASTNAME',$clang->gT("Lastname from token"));
 		$replFields[]=array('SURVEYNAME',$clang->gT("Name of the survey"));
 		$replFields[]=array('SURVEYDESCRIPTION',$clang->gT("Description of the survey"));
-		$replFields[]=array('ATTRIBUTE_1',$clang->gT("Attribute_1 from token"));
-		$replFields[]=array('ATTRIBUTE_2',$clang->gT("Attribute_2 from token"));
+        $attributes=GetTokenFieldsAndNames($surveyid,true);
+        foreach ($attributes as $attributefield=>$attributedescription)
+        {
+            $replFields[]=array(strtoupper($attributefield), sprintf($clang->gT("Token attribute: %s"),$attributedescription));
+        }
 		$replFields[]=array('ADMINNAME',$clang->gT("Name of the survey administrator"));
 		$replFields[]=array('ADMINEMAIL',$clang->gT("Email address of the survey administrator"));
 		$replFields[]=array('SURVEYURL',$clang->gT("URL of the survey"));
@@ -152,13 +160,20 @@ switch ($fieldtype)
 		$replFields[]=array('TOKEN:FIRSTNAME',$clang->gT("Firstname from token"));
 		$replFields[]=array('TOKEN:LASTNAME',$clang->gT("Lastname from token"));
 		$replFields[]=array('TOKEN:EMAIL',$clang->gT("Email from the token"));
-		$replFields[]=array('TOKEN:ATTRIBUTE_1',$clang->gT("Attribute_1 from token"));
-		$replFields[]=array('TOKEN:ATTRIBUTE_2',$clang->gT("Attribute_2 from token"));
+        $attributes=GetTokenFieldsAndNames($surveyid,true);
+        foreach ($attributes as $attributefield=>$attributedescription)
+        {
+            $replFields[]=array('TOKEN:'.strtoupper($attributefield), sprintf($clang->gT("Token attribute: %s"),$attributedescription));
+        }
 		$replFields[]=array('EXPIRY',$clang->gT("Survey expiration date (YYYY-MM-DD)"));
 		$replFields[]=array('EXPIRY-DMY',$clang->gT("Survey expiration date (DD-MM-YYYY)"));
 		$replFields[]=array('EXPIRY-MDY',$clang->gT("Survey expiration date (MM-DD-YYYY)"));
 	case 'editanswer':
 		$isInstertansEnabled=true;
+	break;
+	case 'assessment-text':
+		$replFields[]=array('TOTAL',$clang->gT("Overall assessment score"));
+		$replFields[]=array('PERC',$clang->gT("Assessment group score"));
 	break;
 }
 
@@ -330,7 +345,7 @@ if ($isInstertansEnabled===true)
 	
 		foreach($theserows as $rows)
 		{
-		    $shortquestion=$rows['title'].": ".strip_tags($rows['question']);
+		    $shortquestion=$rows['title'].": ".FlattenText($rows['question']);
 	
 	    if ($rows['type'] == "A" ||
 	        $rows['type'] == "B" ||
@@ -467,7 +482,7 @@ if ($isInstertansEnabled===true)
 	// if they are date type
 	
 	
-	//$limereplacementoutput .="\t\t\t<div style='overflow-x:scroll; width:100%; overflow: -moz-scrollbars-horizontal; overflow-y:scroll; height: 100px;'>\n"
+	//$limereplacementoutput .="\t<div style='overflow-x:scroll; width:100%; overflow: -moz-scrollbars-horizontal; overflow-y:scroll; height: 100px;'>\n"
 	
 	
 }
@@ -475,7 +490,7 @@ if ($isInstertansEnabled===true)
 
 if (count($replFields) > 0 || isset($cquestions) )
 {
-	$limereplacementoutput .= "\t\t\t\t\t<select name='cquestions' id='cquestions' style='font-family:verdana; background-color: #FFFFFF; font-size:10; border: 0px;width:99%;' size='15' ondblclick='Ok();'>\n";
+	$limereplacementoutput .= "\t<select name='cquestions' id='cquestions' style='font-family:verdana; background-color: #FFFFFF; font-size:10; border: 0px;width:99%;' size='15' ondblclick='Ok();'>\n";
 	$noselection = false;
 }
 else
@@ -489,19 +504,19 @@ else
 
 if (count($replFields) > 0)
 {
-	$limereplacementoutput .= "\t\t\t\t\t\t<optgroup label='".$clang->gT("Standard Fields")."'>\n";
+	$limereplacementoutput .= "<optgroup label='".$clang->gT("Standard Fields")."'>\n";
 
 	foreach ($replFields as $stdfield)
 	{
-		$limereplacementoutput .= "\t\t\t\t\t\t\t<option value='".$stdfield[0]."'";
+		$limereplacementoutput .= "\t<option value='".$stdfield[0]."' title='".$stdfield[1]."'";
 		$limereplacementoutput .= ">".$stdfield[1]."</option>\n";
 	}
-	$limereplacementoutput .= "\t\t\t\t\t\t</optgroup>\n";
+	$limereplacementoutput .= "</optgroup>\n";
 }
 
 if (isset($cquestions))
 {
-	$limereplacementoutput .= "\t\t\t\t\t\t<optgroup label='".$clang->gT("Previous Answers Fields")."'>\n";
+	$limereplacementoutput .= "<optgroup label='".$clang->gT("Previous Answers Fields")."'>\n";
 	foreach ($cquestions as $cqn)
 	{
 		$isDisabled="";
@@ -514,52 +529,53 @@ if (isset($cquestions))
 			 $isDisabled=" disabled='disabled'";
 		}
 
-		$limereplacementoutput .= "\t\t\t\t\t\t\t<option value='INSERTANS:$cqn[3]'";
+		$limereplacementoutput .= "\t<option value='INSERTANS:$cqn[3]' title='".$cqn[0]."'";
 		$limereplacementoutput .= " $isDisabled >$cqn[0]</option>\n";
 	}
-	$limereplacementoutput .= "\t\t\t\t\t\t</optgroup>\n";
+	$limereplacementoutput .= "</optgroup>\n";
 }
 
 
 if ($noselection === false)
 {
-	$limereplacementoutput .= "\t\t\t\t\t</select>\n";
+	$limereplacementoutput .= "\t</select>\n";
 }
 
-$limereplacementoutput .= "\t\t\t\t</td>\n"
-			. "\t\t\t</tr>\n";
+$limereplacementoutput .= "</td>\n"
+			. "\t</tr>\n";
 
 if (isset($surveyformat))
 {
     switch ($surveyformat)
     {
 	    case 'A':
-		    $limereplacementoutput .= "\t\t\t<tr>\n"
-					. "\t\t\t\t<td>\n";
-		    $limereplacementoutput .= "\t\t\t\t\t<br />\n"
-					. "\t\t\t\t\t<font color='orange'>".$clang->gT("Some Question have been disabled")."</font>\n";
-            $limereplacementoutput .= "\t\t\t\t\t<br />\n"
-				. "\t\t\t\t\t".sprintf($clang->gT("Survey Format is %s:"), $clang->gT("All in one"))
-				. "\t\t\t\t\t<br />\n"
-				. "\t\t\t\t\t<i>".$clang->gT("Only Previous pages answers are available")."</i>\n"
-				. "\t\t\t\t\t<br />\n";
-		    $limereplacementoutput .= "\t\t\t\t</td>\n"
-					. "\t\t\t</tr>\n";
+		    $limereplacementoutput .= "\t<tr>\n"
+					. "<td>\n";
+		    $limereplacementoutput .= "\t<br />\n"
+					. "\t<font color='orange'>".$clang->gT("Some Question have been disabled")."</font>\n";
+            $limereplacementoutput .= "\t<br />\n"
+				. "\t".sprintf($clang->gT("Survey Format is %s:"), $clang->gT("All in one"))
+				. "\t<br />\n"
+				. "\t<i>".$clang->gT("Only Previous pages answers are available")."</i>\n"
+				. "\t<br />\n";
+		    $limereplacementoutput .= "</td>\n"
+					. "\t</tr>\n";
 	    break;
 	    case 'G':
-		    $limereplacementoutput .= "\t\t\t<tr>\n"
-					. "\t\t\t\t<td>\n";
-		    $limereplacementoutput .= "\t\t\t\t\t<br /><font color='orange'>".$clang->gT("Some Question have been disabled")."</font>";
+		    $limereplacementoutput .= "\t<tr>\n"
+					. "<td>\n";
+		    $limereplacementoutput .= "\t<br /><font color='orange'>".$clang->gT("Some Question have been disabled")."</font>";
             $limereplacementoutput .= "<br />".sprintf($clang->gT("Survey mode is set to %s:"), $clang->gT("Group by Group"))."<br/><i>".$clang->gT("Only Previous pages answers are available")."</i><br />";
-			$limereplacementoutput .= "\t\t\t\t</td>\n"
-						. "\t\t\t</tr>\n";
+			$limereplacementoutput .= "</td>\n"
+						. "\t</tr>\n";
 	    break;
     }
 }
 
-$limereplacementoutput .= "\t\t</table>\n"
+$limereplacementoutput .= "</table>\n"
 			. "\t</body>\n"
 			. "</html>";
 
 echo $limereplacementoutput;
+exit;
 ?>

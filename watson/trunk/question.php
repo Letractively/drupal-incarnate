@@ -10,7 +10,7 @@
 * other free or open source software licenses.
 * See COPYRIGHT.php for copyright notices and details.
 * 
-* $Id: question.php 6652 2009-04-16 09:39:08Z c_schmitz $
+* $Id: question.php 8372 2010-02-11 11:10:15Z lemeur $
 */
 
 //Security Checked: POST, GET, SESSION, REQUEST, returnglobal, DB       
@@ -21,9 +21,13 @@ if (!isset($homedir) || isset($_REQUEST['$homedir'])) {die("Cannot run this scri
 if (!isset($_SESSION['step'])) {$_SESSION['step']=0;}
 if (!isset($_SESSION['totalsteps'])) {$_SESSION['totalsteps']=0;}
 if (!isset($_POST['newgroupondisplay'])) {$_POST['newgroupondisplay'] = "";}
-if (isset($move) && $move == "moveprev" && !$_POST['newgroupondisplay']) {$_SESSION['step'] = $thisstep-1;}
-elseif (isset($move) && $move == "moveprev" && $_POST['newgroupondisplay'] == "Y") {$_SESSION['step'] = $thisstep;}
-if (isset($move) && $move == "movenext") {$_SESSION['step'] = $thisstep+1;}
+if (isset($move) && $move == "moveprev" && !$_POST['newgroupondisplay'] && $thissurvey['allowprev']=='Y') {$_SESSION['step'] = $thisstep-1;}
+elseif (isset($move) && $move == "moveprev" && $_POST['newgroupondisplay'] == "Y" && $thissurvey['allowprev']=='Y') {$_SESSION['step'] = $thisstep;}
+if (isset($move) && $move == "movenext") 
+{
+    if ($_SESSION['step']==$thisstep)
+    $_SESSION['step'] = $thisstep+1;
+}
 
 
 // We do not keep the participant session anymore when the same browser is used to answer a second time a survey (let's think of a library PC for instance).
@@ -77,7 +81,7 @@ if (!isset($_SESSION['step']) || !$_SESSION['step'])
 	doHeader();
 
 	echo templatereplace(file_get_contents("$thistpl/startpage.pstpl"));
-	echo "\n<form method='post' action='{$_SERVER['PHP_SELF']}' id='limesurvey' name='limesurvey'>\n";
+	echo "\n<form method='post' action='{$_SERVER['PHP_SELF']}' id='limesurvey' name='limesurvey' autocomplete='off'>\n";
 
 	echo "\n\n<!-- START THE SURVEY -->\n";
 
@@ -90,7 +94,7 @@ if (!isset($_SESSION['step']) || !$_SESSION['step'])
 	echo templatereplace(file_get_contents("$thistpl/navigator.pstpl"));
 	if ($thissurvey['active'] != "Y")
 	{
-		echo "\t\t<center><font color='red' size='2'>".$clang->gT("This survey is not currently active. You will not be able to save your responses.")."</font></center>\n";
+		echo "<center><font color='red' size='2'>".$clang->gT("This survey is not currently active. You will not be able to save your responses.")."</font></center>\n";
 	}
 	echo "\n<input type='hidden' name='sid' value='$surveyid' id='sid' />\n";
 	echo "\n<input type='hidden' name='token' value='$token' id='token' />\n";
@@ -114,15 +118,17 @@ $ia=$_SESSION['fieldarray'][$currentquestion];
 
 list($newgroup, $gid, $groupname, $groupdescription, $gl)=checkIfNewGroup($ia);
 
-// MANAGE CONDITIONAL QUESTIONS
+// MANAGE CONDITIONAL QUESTIONS AND HIDDEN QUESTIONS
+$qidattributes=getQuestionAttributes($ia[0]);
 $conditionforthisquestion=$ia[7];
 $questionsSkipped=0;
-while ($conditionforthisquestion == "Y") //IF CONDITIONAL, CHECK IF CONDITIONS ARE MET
+
+while ($conditionforthisquestion == "Y" || $qidattributes['hidden']==1) //IF CONDITIONAL, CHECK IF CONDITIONS ARE MET; IF HIDDEN MOVE TO NEXT
 { // this is a while, not an IF because if we skip the question we loop on the next question, see below
-    if (checkquestionfordisplay($ia[0]) === true)
+    if (checkquestionfordisplay($ia[0]) === true && $qidattributes['hidden']==0)
     { // question will be displayed
-	// we set conditionforthisquestion to N here because it is used later to select style=display:'' for the question
-	$conditionforthisquestion="N";
+	    // we set conditionforthisquestion to N here because it is used later to select style=display:'' for the question
+	    $conditionforthisquestion="N";
     }
     else
     {
@@ -161,7 +167,8 @@ while ($conditionforthisquestion == "Y") //IF CONDITIONAL, CHECK IF CONDITIONS A
 		// because we skip this question, we need to loop on the same condition 'check-block'
 		//  with the new question (we have overwritten $ia)
 		$conditionforthisquestion=$ia[7];
-    }
+		$qidattributes=getQuestionAttributes($ia[0]);
+	}
 } // End of while conditionforthisquestion=="Y"
 
 //SUBMIT
@@ -213,16 +220,18 @@ if ((isset($move) && $move == "movesubmit")  && (!isset($notanswered) || !$notan
     	}
 
     }
-    else
+    else //THE FOLLOWING DEALS WITH SUBMITTING ANSWERS AND COMPLETING AN ACTIVE SURVEY
     {
-
-
         if ($thissurvey['usecookie'] == "Y" && $tokensexist != 1) //don't use cookies if tokens are being used
         {
             $cookiename="PHPSID".returnglobal('sid')."STATUS";
-            setcookie("$cookiename", "COMPLETE", time() + 31536000);
+            setcookie("$cookiename", "COMPLETE", time() + 31536000); //Cookie will expire in 365 days
         }
 
+        //Before doing the "templatereplace()" function, check the $thissurvey['url']
+        //field for limereplace stuff, and do transformations!
+        $thissurvey['surveyls_url']=insertansReplace($thissurvey['surveyls_url']);
+		$thissurvey['surveyls_url']=passthruReplace($thissurvey['surveyls_url'], $thissurvey);
 
         $content='';
         $content .= templatereplace(file_get_contents("$thistpl/startpage.pstpl"));
@@ -238,7 +247,7 @@ if ((isset($move) && $move == "movesubmit")  && (!isset($notanswered) || !$notan
         }
 
         
-        if (trim($thissurvey['surveyls_endtext'])=='')
+        if (FlattenText($thissurvey['surveyls_endtext'])=='')
         {
             $completed = "<br /><span class='success'>".$clang->gT("Thank you!")."</span><br /><br />\n\n"
                         . $clang->gT("Your survey responses have been recorded.")."<br /><br />\n";           
@@ -252,7 +261,7 @@ if ((isset($move) && $move == "movesubmit")  && (!isset($notanswered) || !$notan
         if ($thissurvey['printanswers']=='Y')
         {
             $completed .= "<br /><br />"
-            ."<a class='printlink' href='printanswers.php' target='_blank'>"
+            ."<a class='printlink' href='printanswers.php?sid=$surveyid' target='_blank'>"
             .$clang->gT("Click here to print your answers.")
             ."</a><br />\n";
          }
@@ -278,7 +287,7 @@ if ((isset($move) && $move == "movesubmit")  && (!isset($notanswered) || !$notan
         }
 
         //Send notification to survey administrator //Thanks to Jeff Clement http://jclement.ca
-        if ($thissurvey['sendnotification'] > 0 && $thissurvey['adminemail'])
+        if (($thissurvey['sendnotification'] > 0 && $thissurvey['adminemail']) || !empty($thissurvey['emailresponseto']))
         {
             sendsubmitnotification($thissurvey['sendnotification']);
         }
@@ -289,7 +298,8 @@ if ((isset($move) && $move == "movesubmit")  && (!isset($notanswered) || !$notan
         if (isset($thissurvey['autoredirect']) && $thissurvey['autoredirect'] == "Y" && $thissurvey['surveyls_url'])
         {
             //Automatically redirect the page to the "url" setting for the survey
-            $url = $thissurvey['surveyls_url'];
+            $url = insertansReplace($thissurvey['surveyls_url']);
+            $url = passthruReplace($url, $thissurvey);
             $url=str_replace("{SAVEDID}",$saved_id, $url);           // to activate the SAVEDID in the END URL
             $url=str_replace("{TOKEN}",$clienttoken, $url);          // to activate the TOKEN in the END URL
             $url=str_replace("{SID}", $surveyid, $url);              // to activate the SID in the END URL
@@ -407,52 +417,13 @@ if (isset($vpopup)) {echo $vpopup;}
 
 echo templatereplace(file_get_contents("$thistpl/startpage.pstpl"));
 
-echo "\n<form method='post' action='{$_SERVER['PHP_SELF']}' id='limesurvey' name='limesurvey'>\n";
+echo "\n<form method='post' action='{$_SERVER['PHP_SELF']}' id='limesurvey' name='limesurvey' autocomplete='off'>\n";
 
 //PUT LIST OF FIELDS INTO HIDDEN FORM ELEMENT
 echo "\n\n<!-- INPUT NAMES -->\n";
 echo "\t<input type='hidden' name='fieldnames' value='";
 echo implode("|", $inputnames);
 echo "' id='fieldnames'  />\n";
-echo "\n\n<!-- JAVASCRIPT FOR MODIFIED QUESTIONS -->\n";
-echo "\t<script type='text/javascript'>\n";
-echo "\t<!--\n";
-echo "\t\t\t\tfunction ValidDate(oObject)\n";
-echo "\t\t\t\t{// Regular expression used to check if date is in correct format\n";
-echo "\t\t\t\t\tvar str_regexp = /[1-9][0-9]{3}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])/;\n";
-echo "\t\t\t\t\tvar pattern = new RegExp(str_regexp);\n";
-echo "\t\t\t\t\tif ((oObject.value.match(pattern)!=null))\n";
-echo "\t\t\t\t\t{var date_array = oObject.value.split('-');\n";
-echo "\t\t\t\t\t\tvar day = date_array[2];\n";
-echo "\t\t\t\t\t\tvar month = date_array[1];\n";
-echo "\t\t\t\t\t\tvar year = date_array[0];\n";
-echo "\t\t\t\t\t\tstr_regexp = /1|3|5|7|8|10|12/;\n";
-echo "\t\t\t\t\t\tpattern = new RegExp(str_regexp);\n";
-echo "\t\t\t\t\t\tif ( day <= 31 && (month.match(pattern)!=null))\n";
-echo "\t\t\t\t\t\t{ return true;\n";
-echo "\t\t\t\t\t\t}\n";
-echo "\t\t\t\t\t\tstr_regexp = /4|6|9|11/;\n";
-echo "\t\t\t\t\t\tpattern = new RegExp(str_regexp);\n";
-echo "\t\t\t\t\t\tif ( day <= 30 && (month.match(pattern)!=null))\n";
-echo "\t\t\t\t\t\t{ return true;\n";
-echo "\t\t\t\t\t\t}\n";
-echo "\t\t\t\t\t\tif (day == 29 && month == 2 && (year % 4 == 0))\n";
-echo "\t\t\t\t\t\t{ return true;\n";
-echo "\t\t\t\t\t\t}\n";
-echo "\t\t\t\t\t\tif (day <= 28 && month == 2)\n";
-echo "\t\t\t\t\t\t{ return true;\n";
-echo "\t\t\t\t\t\t}        \n";
-echo "\t\t\t\t\t}\n";
-echo "\t\t\t\t\twindow.alert('".$clang->gT("Date is not valid!")."');\n";
-echo "\t\t\t\t\toObject.focus();\n";
-echo "\t\t\t\t\toObject.select();\n";
-echo "\t\t\t\t\treturn false;\n";
-echo "\t\t\t\t}\n";
-//echo "\t\t}\n";
-echo "\t//-->\n";
-echo "\t</script>\n\n";
-// <-- END NEW FEATURE - SAVE
-
 echo "\n\n<!-- START THE SURVEY -->\n";
 echo templatereplace(file_get_contents("$thistpl/survey.pstpl"));
 
@@ -460,7 +431,7 @@ if ($bIsGroupDescrPage)
 {
 	$presentinggroupdescription = "yes";
 	echo "\n\n<!-- START THE GROUP DESCRIPTION -->\n";
-	echo "\t\t\t<input type='hidden' name='grpdesc' value='Y' id='grpdesc' />\n";
+	echo "\t<input type='hidden' name='grpdesc' value='Y' id='grpdesc' />\n";
 	echo templatereplace(file_get_contents("$thistpl/startgroup.pstpl"));
 	echo "\n<br />\n";
 
@@ -473,9 +444,12 @@ if ($bIsGroupDescrPage)
 	echo "\n\n<!-- JAVASCRIPT FOR CONDITIONAL QUESTIONS -->\n";
 	echo "\t<script type='text/javascript'>\n";
 	echo "\t<!--\n";
-	echo "\t\tfunction checkconditions(value, name, type)\n";
-	echo "\t\t\t{\n";
-	echo "\t\t\t}\n";
+	echo "function noop_checkconditions(value, name, type)\n";
+	echo "\t{\n";
+	echo "\t}\n";
+	echo "function checkconditions(value, name, type)\n";
+	echo "\t{\n";
+	echo "\t}\n";
 	echo "\t//-->\n";
 	echo "\t</script>\n\n";
 	echo "\n\n<!-- END THE GROUP -->\n";
@@ -483,7 +457,7 @@ if ($bIsGroupDescrPage)
 	echo "\n";
 
 	$_SESSION['step']--;
-	echo "\t\t\t<input type='hidden' name='newgroupondisplay' value='Y' id='newgroupondisplay' />\n";
+	echo "\t<input type='hidden' name='newgroupondisplay' value='Y' id='newgroupondisplay' />\n";
 }
 else
 {
@@ -498,11 +472,26 @@ else
 	echo "\n\n<!-- JAVASCRIPT FOR CONDITIONAL QUESTIONS -->\n";
 	echo "\t<script type='text/javascript'>\n";
 	echo "\t<!--\n";
-	echo "\t\tfunction checkconditions(value, name, type)\n";
-	echo "\t\t\t{\n";
-	echo "\t\t\t}\n";
+	echo "function noop_checkconditions(value, name, type)\n";
+	echo "\t{\n";
+	echo "\t}\n";
+	echo "function checkconditions(value, name, type)\n";
+	echo "\t{\n";
+	echo "\t}\n";
 	echo "\t//-->\n";
 	echo "\t</script>\n\n";
+
+	//Display the "mandatory" message on page if necessary
+	if (isset($showpopups) && $showpopups == 0 && isset($notanswered) && $notanswered == true)
+	{
+		echo "<p><span class='errormandatory'>" . $clang->gT("One or more mandatory questions have not been answered. You cannot proceed until these have been completed.") . "</span></p>";
+	}
+
+	//Display the "validation" message on page if necessary
+	if (isset($showpopups) && $showpopups == 0 && isset($notvalidated) && $notvalidated == true)
+	{
+		echo "<p><span class='errormandatory'>" . $clang->gT("One or more questions have not been answered in a valid manner. You cannot proceed until these answers are valid.") . "</span></p>";
+	}
 
 	echo "\n\n<!-- PRESENT THE QUESTIONS -->\n";
 	if (is_array($qanda))
@@ -529,18 +518,38 @@ else
 //			if ($qa[3] != 'Y') {$n_q_display = '';} else { $n_q_display = ' style="display: none;"';}
 			if ($conditionforthisquestion != 'Y') {$n_q_display = '';} else { $n_q_display = ' style="display: none;"';}
 
-			echo '
-	<!-- NEW QUESTION -->
-				<div id="question'.$qa[4].'" class="'.$q_class.$man_class.'"'.$n_q_display.'>
-';
 			$question= $qa[0];
+//===================================================================
+// The following four variables offer the templating system the
+// capacity to fully control the HTML output for questions making the
+// above echo redundant if desired.
+			$question['essentials'] = 'id="question'.$qa[4].'"'.$n_q_display;
+			$question['class'] = $q_class;
+			$question['man_class'] = $man_class;
+//===================================================================
 			$answer=$qa[1];
 			$help=$qa[2];
 			$questioncode=$qa[5];
-			echo templatereplace(file_get_contents("$thistpl/question.pstpl"));
-			echo '
+
+			$question_template = file_get_contents($thistpl.'/question.pstpl');
+
+			if( (strpos( $question_template , '{QUESTION_ESSENTIALS}') == false) || (strpos( $question_template , '{QUESTION_CLASS}') == false) )
+			{
+// if {QUESTION_ESSENTIALS} is present in the template but not {QUESTION_CLASS} remove it because you don't want id="" and display="" duplicated.
+				$question_template = str_replace( '{QUESTION_ESSENTIALS}' , '' , $question_template );
+				echo '
+	<!-- NEW QUESTION -->
+				<div id="question'.$qa[4].'" class="'.$q_class.$man_class.'"'.$n_q_display.'>
+';
+				echo templatereplace($question_template);
+				echo '
 				</div>
 ';
+			}
+			else
+			{
+				echo templatereplace($question_template);
+			};
 		}
 	}
 	echo "\n\n<!-- END THE GROUP -->\n";
@@ -556,7 +565,7 @@ echo "\n";
 
 if ($thissurvey['active'] != "Y")
 {
-	echo "\t\t<center><font color='red' size='2'>".$clang->gT("This survey is not currently active. You will not be able to save your responses.")."</font></center>\n";
+	echo "<center><font color='red' size='2'>".$clang->gT("This survey is not currently active. You will not be able to save your responses.")."</font></center>\n";
 }
 
 echo "\n";
