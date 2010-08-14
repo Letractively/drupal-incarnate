@@ -16,7 +16,7 @@
 
 //Ensure script is not run directly, avoid path disclosure
 include_once("login_check.php");
-
+define('Q_PER_GROUP', 12);
 echo '<link rel="stylesheet" type="text/css" href="./styles/default/cnc.css" /><center>';
 	
 if (!isset($imagefiles)) {$imagefiles="./images";}
@@ -144,20 +144,23 @@ if ((isset($_POST['first_name']) && $_POST['first_name']=="on")  || (isset($_POS
 	. " LEFT OUTER JOIN {$dbprefix}tokens_$surveyid"
 	. " ON $surveytable.token = {$dbprefix}tokens_$surveyid.token";
 }
+
+if( isset($_GET['id'])){
+	$dquery .= " WHERE id = " . $_GET['id'];
+}
+
 if (incompleteAnsFilterstate() == "filter")
 {
-	$dquery .= "  WHERE $surveytable.submitdate is not null ";
+	$dquery .= "  AND $surveytable.submitdate is not null ";
 } elseif (incompleteAnsFilterstate() == "inc")
 {
-    $dquery .= "  WHERE $surveytable.submitdate is null ";
+    $dquery .= "  AND $surveytable.submitdate is null ";
 }
-if( isset($_GET['id'])){
-	$dquery .= " and id = " . $_GET['id'];
-}
+
 $dquery .=" ORDER BY id ";
 
 
-//print_r($dquery);
+// print_r($dquery);
 
 $dresult = db_select_limit_assoc($dquery, 1) or safe_die($clang->gT("Error")." getting results<br />$dquery<br />".$connect->ErrorMsg());
 $fieldcount = $dresult->FieldCount();
@@ -175,17 +178,19 @@ $limit_interval = sanitize_int($_POST['export_to']) - sanitize_int($_POST['expor
 
 	$dquery = "SELECT $selectfields FROM $surveytable ";
 
-	if (incompleteAnsFilterstate() == "filter")
-	{
-    $dquery .= "  WHERE $surveytable.submitdate is not null ";
-	} elseif (incompleteAnsFilterstate() == "inc")
-	{
-	$dquery .= "  WHERE $surveytable.submitdate is null ";
+	if( isset($_GET['id'])){
+		$dquery .= " WHERE id = " . $_GET['id'];
 	}
 	
-	if( isset($_GET['id'])){
-		$dquery .= " and id = " . $_GET['id'];
+	if (incompleteAnsFilterstate() == "filter")
+	{
+    $dquery .= "  AND $surveytable.submitdate is not null ";
+	} elseif (incompleteAnsFilterstate() == "inc")
+	{
+	$dquery .= "  AND $surveytable.submitdate is null ";
 	}
+	
+	
 
 $dquery .= " ORDER BY $surveytable.id";
 
@@ -404,8 +409,27 @@ $dquery .= " ORDER BY $surveytable.id";
 		<br/>
 		<?php 
 		
+		$myArray = questionArray();
 		
-		$pcri = (abs($drow['61424X30X106ROPR1'] - $drow['61424X44X140ROPR1']) + 
+		$diff_pairs = array();
+		for ($i = 1; $i <= 24; $i++) {
+			$diff_pairs['PCRS'.$i] = 'PCIS'.$i;
+		}
+		//print_r($diff_pairs);
+		
+		$diff_pairs_ro = array();
+		for ($i = 1; $i <= 12; $i++) {
+			$diff_pairs_ro['PCRS'.$i] = 'PCOS'.$i;
+		}
+		for ($i = 25; $i <= 36; $i++) {
+			$diff_pairs_ro['PCRS'.$i] = 'PCOS'.$i;
+		}
+		
+		
+		
+		$pcri = calculate_difference($diff_pairs, $drow, $myArray);
+		$pcro = calculate_difference($diff_pairs_ro, $drow, $myArray);
+		/*$pcri = (	abs($drow['61424X30X106ROPR1'] - $drow['61424X44X140ROPR1']) + 
 					abs($drow['61424X30X106RI1'] - $drow['61424X44X140RI1']) +
 					abs($drow['61424X30X106ROPR3'] - $drow['61424X44X140ROPR3']) + 
 					abs($drow['61424X30X106ROPI6'] - $drow['61424X44X140ROPI6']) +
@@ -455,7 +479,7 @@ $dquery .= " ORDER BY $surveytable.id";
               		abs($drow['61424X42X137ROPO6'] - $drow['61424X50X144ROPO6']) + 
               		abs($drow['61424X42X137RR5'] - $drow['61424X50X144RR5'])) / 24;
 		
-		
+		*/
 		
 		?>
 		<table>
@@ -486,11 +510,56 @@ $dquery .= " ORDER BY $surveytable.id";
 	}
 
     
-    //echo "$exportoutput";
+   // echo "$exportoutput";
 
 	echo "</center>";
 	exit;
 
+function keyToLime($self) {
+	if ($self == "RS") {
+		$group_title = "RR";	
+	}
+	else if ($self == "IS") {
+		$group_title = "IR";	
+	}
+	else if ($self == "OS") {
+		$group_title = "OR";	
+	}
+	else {
+		echo "Unknown self: $self.  Exiting...";
+		exit;
+	}
+	return $group_title;
+}	
+	
+function calculate_difference($diff_arr, $data_row, $code_array) {
+	
+	$sum = 0;
+	
+	foreach ($diff_arr as $key => $value) {
+		
+		$my_first_level = convertNeillCodeToArrayKey($key);
+		$my_first_level_2 = convertNeillCodeToArrayKey($value);
+		
+		$my_code_1 = $code_array[$my_first_level][getSortOrder(getQuestionNumber($key))];
+		$my_code_2 = $code_array[$my_first_level_2][getSortOrder(getQuestionNumber($value))];
+		
+	
+		if (!isset($data_row[$my_code_1])) {
+			echo "Code does not exist...";
+			exit;
+		}
+		if (!isset($data_row[$my_code_2])) {
+			echo "Code does not exist...";
+			exit;
+		}
+		
+		$sum = $sum + abs($data_row[$my_code_1] - $data_row[$my_code_2]);
+		
+	}
+	return $sum / count($diff_arr);
+	
+}
 
 function strip_tags_full($string) {
     $string=html_entity_decode_php4($string, ENT_QUOTES, "UTF-8");
@@ -502,6 +571,117 @@ function strip_tags_full($string) {
     return strip_tags($string);
 }
 
+function questionArray() {
+	$sql = "SELECT * 
+								FROM  `lime_questions` q
+								LEFT JOIN lime_answers a on q.qid = a.qid
+								WHERE  `sid` =61424 
+								ORDER BY title";
+	$dbresult = db_select_limit_assoc($sql, -1, $from_record);
+	$return_array = array();
+						
+	while ($drow = $dbresult->FetchRow()) {
+		//$return_array[$drow['title']][$drow['sortorder']] =  $drow['answer'];		
+		$return_array[$drow['title']][$drow['sortorder']] =  $drow['sid'].'X'.$drow['gid'].'X'.$drow['qid'].$drow['code'];				
+	}	
+	
+
+	return $return_array;
+}
+function convertNeillCodeToArrayKey($neillCode) {
+	$construct = substr($neillCode, 0, 2);
+	$self = substr($neillCode,2,2);
+	$questionNumber = substr($neillCode, 4);
+		
+	$group_title = "";
+	$group_title_num = "";
+			
+			
+	if ($construct == "PC") {
+		$lime_survey_id = "61424";
+	}
+	$group_title = keyToLime($self);
+			
+	// TODO: loop it
+	if (($questionNumber >= 1) && ($questionNumber <= Q_PER_GROUP)) {
+		$group_title_num = "1";
+	}
+	else if (($questionNumber > Q_PER_GROUP) && ($questionNumber <= (Q_PER_GROUP*2))) {
+		$group_title_num = "2";	
+	}
+	else if (($questionNumber > (Q_PER_GROUP*2)) && ($questionNumber <= (Q_PER_GROUP*3))) {
+		$group_title_num = "3";		
+	}
+	$group_title = $group_title.$group_title_num;
+	return $group_title;
+}
+function getSortOrder($qNum) {
+	if (($qNum >= 1) && ($qNum <= Q_PER_GROUP)) {
+		$group_title_num = "1";
+	}
+	else if (($qNum > Q_PER_GROUP) && ($qNum <= (Q_PER_GROUP*2))) {
+		$group_title_num = "2";	
+	}
+	else if (($qNum > (Q_PER_GROUP*2)) && ($qNum <= (Q_PER_GROUP*3))) {
+		$group_title_num = "3";		
+	}
+		
+	$sortorder_index = ($group_title_num * Q_PER_GROUP);
+	$idx =  $qNum - (($group_title_num - 1) * Q_PER_GROUP);
+	return $idx;
+}
+function getQuestionNumber($neillCode) {
+	return substr($neillCode, 4);
+}
+function neillToLimeSurvey($neillCode, $limeCodeArray) {
+
+	$construct = substr($neillCode, 0, 2);
+	$self = substr($neillCode,2,2);
+	$questionNumber = substr($neillCode, 4);
+		
+	$group_title = "";
+	$group_title_num = "";
+			
+	
+			
+	if ($construct == "PC") {
+		$lime_survey_id = "61424";
+	}
+	$group_title = keyToLime($self);
+			
+	// TODO: loop it
+	if (($questionNumber >= 1) && ($questionNumber <= Q_PER_GROUP)) {
+		$group_title_num = "1";
+	}
+	else if (($questionNumber > Q_PER_GROUP) && ($questionNumber <= (Q_PER_GROUP*2))) {
+		$group_title_num = "2";	
+	}
+	else if (($questionNumber > (Q_PER_GROUP*2)) && ($questionNumber <= (Q_PER_GROUP*3))) {
+		$group_title_num = "3";		
+	}
+	$group_title = $group_title.$group_title_num;
+
+	// convert neill's code into a 1-12 number for the group
+		
+	$sortorder_index = ($group_title_num * Q_PER_GROUP);
+	$idx =  $questionNumber - (($group_title_num - 1) * Q_PER_GROUP);
+
+	
+	if (!isset($limeCodeArray[$group_title][$idx])) {
+		echo "Problem - couldn't find $group_title for $idx - Exiting...";
+		exit;
+	}
+	return clean_question_format($limeCodeArray[$group_title][$idx]);
+	
+}
+
+function clean_question_format($string) {
+	
+	$text = explode(":", $string);
+	$text = substr($text[1], 0, strlen($text[1]) - 1);
+	return $text;
+	
+}
 
 function formatDate( $dateStr )
 {
