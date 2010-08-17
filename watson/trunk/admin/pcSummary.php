@@ -536,15 +536,22 @@ function calculate_difference($diff_arr, $data_row, $code_array) {
 	
 	$sum = 0;
 	
+	$debug = "Begin debug<br>";
+	
+	$i = 1;
+	
 	foreach ($diff_arr as $key => $value) {
-		
+		//echo $key." => ".print_r($value);
 		$my_first_level = convertNeillCodeToArrayKey($key);
 		$my_first_level_2 = convertNeillCodeToArrayKey($value);
 		
-		$my_code_1 = $code_array[$my_first_level][getSortOrder(getQuestionNumber($key))];
-		$my_code_2 = $code_array[$my_first_level_2][getSortOrder(getQuestionNumber($value))];
+		$my_code_1 = $code_array[$my_first_level][getSortOrder(getQuestionNumber($key))]['value'];
+		$my_code_2 = $code_array[$my_first_level_2][getSortOrder(getQuestionNumber($value))]['value'];
 		
-	
+		$my_answer_1 = $code_array[$my_first_level][getSortOrder(getQuestionNumber($key))]['answer'];
+		$my_answer_2 = $code_array[$my_first_level_2][getSortOrder(getQuestionNumber($value))]['answer'];
+		
+		
 		if (!isset($data_row[$my_code_1])) {
 			echo "Code does not exist...";
 			exit;
@@ -556,7 +563,15 @@ function calculate_difference($diff_arr, $data_row, $code_array) {
 		
 		$sum = $sum + abs($data_row[$my_code_1] - $data_row[$my_code_2]);
 		
+		$debug .= "$i) ABS([$key:'$my_answer_1' = ".$data_row[$my_code_1]."] - [$value:'$my_answer_2' = " .$data_row[$my_code_2] ."]) = ".abs($data_row[$my_code_1] - $data_row[$my_code_2])."<br>";//) = ".abs($data_row[$my_code_1] - $data_row[$my_code_2])." - current sum = ".$sum."<br>"
+		$debug .= "$i) Running sum = $sum<br>";
+		
+		$i++;
 	}
+	$debug .= "==========<br>";
+	$debug .= "Score = $sum / ".count($diff_arr)."<br>";
+	$debug .= "Final score = ".$sum / count($diff_arr)."<br>";
+	echo $debug;
 	return $sum / count($diff_arr);
 	
 }
@@ -571,6 +586,60 @@ function strip_tags_full($string) {
     return strip_tags($string);
 }
 
+function retrieve_AnswerCustom($code, $phpdateformat=null)
+{
+	//This function checks to see if there is an answer saved in the survey session
+	//data that matches the $code. If it does, it returns that data.
+	//It is used when building a questions text to allow incorporating the answer
+	//to an earlier question into the text of a later question.
+	//IE: Q1: What is your name? [Jason]
+	//    Q2: Hi [Jason] how are you ?
+	//This function is called from the retriveAnswers function.
+	global $dbprefix, $connect, $clang;
+	//Find question details
+	$to_return = false;
+	$questiondetails=getsidgidqidaidtype($code);
+	//print_r( $questiondetails);
+	$the_code = $questiondetails['sid']."X".$questiondetails['gid']."X".$questiondetails['qid'].$questiondetails['aid'];
+	$sql = "SELECT $the_code FROM {$dbprefix}survey_".$questiondetails['sid']." WHERE id = ".$_GET['id'];
+	//echo "<BR>$sql<BR>HEY";
+	$result=db_execute_assoc($sql) or safe_die("Error getting answer<br />$sql<br />".$connect->ErrorMsg());  //Checked
+	while($row=$result->FetchRow())
+	{
+		//echo $row[$the_code];
+		$to_return = $row[$the_code];
+	}
+		
+	
+	return html_escape($to_return);
+}
+
+/**
+* insertAnsReplace() takes a string and looks for any {INSERTANS:xxxx} variables
+*  which it then, one by one, substitutes the SGQA code with the relevant answer
+*  from the session array containing responses
+*
+*  The operations of this function were previously in the templatereplace function
+*  but have been moved to a function of their own to make it available
+*  to other areas of the script.
+* 
+* @param mixed $line   string - the string to iterate, and then return
+* 
+* @return string This string is returned containing the substituted responses
+*
+*/
+function insertansReplaceCustom($line)
+{
+	while (strpos($line, "{INSERTANS:") !== false)
+	{
+		$answreplace=substr($line, strpos($line, "{INSERTANS:"), strpos($line, "}", strpos($line, "{INSERTANS:"))-strpos($line, "{INSERTANS:")+1);
+		$answreplace2=substr($answreplace, 11, strpos($answreplace, "}", strpos($answreplace, "{INSERTANS:"))-11);
+		$answreplace3=strip_tags(retrieve_AnswerCustom($answreplace2, null));
+		$line=str_replace($answreplace, $answreplace3, $line);
+	}
+	return $line;
+}
+
 function questionArray() {
 	$sql = "SELECT * 
 								FROM  `lime_questions` q
@@ -579,13 +648,17 @@ function questionArray() {
 								ORDER BY title";
 	$dbresult = db_select_limit_assoc($sql, -1, $from_record);
 	$return_array = array();
-						
+	
+	
+	
 	while ($drow = $dbresult->FetchRow()) {
-		//$return_array[$drow['title']][$drow['sortorder']] =  $drow['answer'];		
-		$return_array[$drow['title']][$drow['sortorder']] =  $drow['sid'].'X'.$drow['gid'].'X'.$drow['qid'].$drow['code'];				
+		
+		
+		$return_array[$drow['title']][$drow['sortorder']]['value'] =  $drow['sid'].'X'.$drow['gid'].'X'.$drow['qid'].$drow['code'];	
+		$return_array[$drow['title']][$drow['sortorder']]['answer'] =  insertansReplaceCustom($drow['answer']);	
+		
 	}	
 	
-
 	return $return_array;
 }
 function convertNeillCodeToArrayKey($neillCode) {
