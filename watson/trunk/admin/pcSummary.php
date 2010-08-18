@@ -410,7 +410,8 @@ $dquery .= " ORDER BY $surveytable.id";
 		<?php 
 		
 		$myArray = questionArray();
-		
+		//print_r($myArray);
+		//exit;
 		$diff_pairs = array();
 		for ($i = 1; $i <= 24; $i++) {
 			$diff_pairs['PCRS'.$i] = 'PCIS'.$i;
@@ -424,8 +425,6 @@ $dquery .= " ORDER BY $surveytable.id";
 		for ($i = 25; $i <= 36; $i++) {
 			$diff_pairs_ro['PCRS'.$i] = 'PCOS'.$i;
 		}
-		
-		
 		
 		$pcri = calculate_difference($diff_pairs, $drow, $myArray);
 		$pcro = calculate_difference($diff_pairs_ro, $drow, $myArray);
@@ -545,19 +544,27 @@ function calculate_difference($diff_arr, $data_row, $code_array) {
 		$my_first_level = convertNeillCodeToArrayKey($key);
 		$my_first_level_2 = convertNeillCodeToArrayKey($value);
 		
-		$my_code_1 = $code_array[$my_first_level][getSortOrder(getQuestionNumber($key))]['value'];
-		$my_code_2 = $code_array[$my_first_level_2][getSortOrder(getQuestionNumber($value))]['value'];
+		$first_arr = explodeNeillCode($key);
+		$second_arr = explodeNeillCode($value);
+		//print_r($code_array);
 		
-		$my_answer_1 = $code_array[$my_first_level][getSortOrder(getQuestionNumber($key))]['answer'];
-		$my_answer_2 = $code_array[$my_first_level_2][getSortOrder(getQuestionNumber($value))]['answer'];
+		$first_access = getSelfCode($first_arr['q']);
+		$second_access = getSelfCode($second_arr['q']);
+		
+		$my_code_1 = $code_array[$my_first_level][$first_access]['value'];
+		$my_code_2 = $code_array[$my_first_level_2][$second_access]['value'];
+		
+		$my_answer_1 = $code_array[$my_first_level][$first_access]['answer'];
+		$my_answer_2 = $code_array[$my_first_level_2][$second_access]['answer'];
+		//echo $my_answer_2." $my_first_level_2 => $second_access<br>";
 		
 		
 		if (!isset($data_row[$my_code_1])) {
-			echo "Code does not exist...";
+			echo "Code 1 does not exist...";
 			exit;
 		}
 		if (!isset($data_row[$my_code_2])) {
-			echo "Code does not exist...";
+			echo "Code 2 does not exist...";
 			exit;
 		}
 		
@@ -645,7 +652,7 @@ function questionArray() {
 								FROM  `lime_questions` q
 								LEFT JOIN lime_answers a on q.qid = a.qid
 								WHERE  `sid` =61424 
-								ORDER BY title";
+								ORDER BY code";
 	$dbresult = db_select_limit_assoc($sql, -1, $from_record);
 	$return_array = array();
 	
@@ -653,14 +660,24 @@ function questionArray() {
 	
 	while ($drow = $dbresult->FetchRow()) {
 		
-		
+		/*
 		$return_array[$drow['title']][$drow['sortorder']]['value'] =  $drow['sid'].'X'.$drow['gid'].'X'.$drow['qid'].$drow['code'];	
-		$return_array[$drow['title']][$drow['sortorder']]['answer'] =  insertansReplaceCustom($drow['answer']);	
 		
+		$return_array[$drow['title']][$drow['code']] = $drow['sid'].'X'.$drow['gid'].'X'.$drow['qid'].$drow['code'];	*/
+		$return_array[substr($drow['title'],0,2)][$drow['code']]['value'] = $drow['sid'].'X'.$drow['gid'].'X'.$drow['qid'].$drow['code'];
+		$return_array[substr($drow['title'],0,2)][$drow['code']]['answer'] =  insertansReplaceCustom($drow['answer']);	
 	}	
 	
 	return $return_array;
 }
+
+function explodeNeillCode($neillCode) {
+	$construct = substr($neillCode, 0, 2);
+	$self = substr($neillCode,2,2);
+	$questionNumber = substr($neillCode, 4);
+	return array('construct' => $construct, 'self' => $self, 'q' => $questionNumber);
+}
+
 function convertNeillCodeToArrayKey($neillCode) {
 	$construct = substr($neillCode, 0, 2);
 	$self = substr($neillCode,2,2);
@@ -669,12 +686,15 @@ function convertNeillCodeToArrayKey($neillCode) {
 	$group_title = "";
 	$group_title_num = "";
 			
-			
 	if ($construct == "PC") {
 		$lime_survey_id = "61424";
 	}
 	$group_title = keyToLime($self);
-			
+	
+	
+	return $group_title;
+	
+	/*		
 	// TODO: loop it
 	if (($questionNumber >= 1) && ($questionNumber <= Q_PER_GROUP)) {
 		$group_title_num = "1";
@@ -687,6 +707,58 @@ function convertNeillCodeToArrayKey($neillCode) {
 	}
 	$group_title = $group_title.$group_title_num;
 	return $group_title;
+	*/
+}
+/**
+ * Converts a self from 1-36 down to 1-6
+ * Enter description here ...
+ * @param $i
+ */
+function getSelfNumber($i) {
+	$ret =  $i % 6;
+	if ($ret == 0) {
+		$ret = 6;
+	}
+	return $ret;
+}
+/**
+ * 
+ * Enter description here ...
+ * @param unknown_type $neillSelf
+ */
+function getSelfCode($id) {
+	/*
+	 * This is how Neill lines up the codes
+	 * 
+	PCRS1 ... PCRS6      correspond to  Real 1... Real 6
+	PCRS7 ... PCRS12    correspond to  Op Real 1... Op Real 6
+	PCRS13... PCRS18  correspond to  Ideal 1... Ideal 6
+	PCRS19... PCRS24  correspond to  Op Ideal 1 to Op Ideal 6
+	PCRS25... PCRS30  correspond to  Ought 1 to Ought 6
+	PCRS31... PCRS36  correspond to  Op Ought 1 to Op Ought 6
+	*/
+	if ($id >= 1 && $id <= 6) {
+		return "RR".getSelfNumber($id);
+	}
+	else if ($id > 6 && $id <= 12) {
+		return "ROPR".getSelfNumber($id);
+	}
+	else if ($id > 12 && $id <= 18) {
+		return "RI".getSelfNumber($id);
+	}
+	else if ($id > 18 && $id <= 24) {
+		return "ROPI".getSelfNumber($id);
+	}
+	else if ($id > 24 && $id <= 30) {
+		return "RO".getSelfNumber($id);
+	}
+	else if ($id > 30 && $id <= 36) {
+		return "ROPO".getSelfNumber($id);
+	}
+	else {
+		echo "Error! '$id' NOT recognized.  Dying...";
+		exit;
+	}
 }
 function getSortOrder($qNum) {
 	if (($qNum >= 1) && ($qNum <= Q_PER_GROUP)) {
@@ -721,7 +793,19 @@ function neillToLimeSurvey($neillCode, $limeCodeArray) {
 		$lime_survey_id = "61424";
 	}
 	$group_title = keyToLime($self);
-			
+	
+	/**
+	 * This is how Neill lines up the codes
+	 * 
+	PCRS1... PCRS6      correspond to  Real 1... Real 6
+	PCRS7... PCRS12    correspond to  Op Real 1... Op Real 6
+	PCRS13... PCRS18  correspond to  Ideal 1... Ideal 6
+	PCRS19... PCRS24  correspond to  Op Ideal 1 to Op Ideal 6
+	PCRS25... PCRS30  correspond to  Ought 1 to Ought 6
+	PCRS31... PCRS36  correspond to  Op Ought 1 to Op Ought 6
+	*/
+	
+	/*
 	// TODO: loop it
 	if (($questionNumber >= 1) && ($questionNumber <= Q_PER_GROUP)) {
 		$group_title_num = "1";
@@ -745,6 +829,7 @@ function neillToLimeSurvey($neillCode, $limeCodeArray) {
 		exit;
 	}
 	return clean_question_format($limeCodeArray[$group_title][$idx]);
+	*/
 	
 }
 
