@@ -1,0 +1,1 @@
+For Drupal noob's, finding the right modules and learning how to configure everything to serve up a site that meets the requirements of your project can be a real time-sink - use this project to check out working copies of real Drupal sites.
